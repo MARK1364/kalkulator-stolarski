@@ -1,0 +1,6 @@
+{
+  "name": "Stolarnia PRO — Kalkulator Sevroll Box 3D",
+  "description": "Profesjonalny kalkulator formatek dla systemów Sevroll Box 3D, szuflad, dna i tyłów z eksportem CSV i nestingiem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

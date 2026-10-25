@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@media print {
+  header, footer, button, .col-del, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .sheet-table, table {
+    width: 100% !important;
+    border: 1px solid #000 !important;
+  }
+  th, td {
+    border: 1px solid #333 !important;
+    padding: 6px !important;
+  }
+}

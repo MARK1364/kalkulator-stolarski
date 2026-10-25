@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23D8D3CB' rx='12'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-size='32' font-weight='800' font-family='sans-serif' fill='%235C4F72'%3ESP%3C/text%3E%3C/svg%3E">
+  <title>Szafka Narożna Prosta — Rzut z góry</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #E8E4DD;
+      color: #3D3A36;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* === KONTENER SVG === */
+    .svg-wrap {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .svg-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .svg-container svg {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #C9C4BB;
+      border-radius: 8px;
+      background: #EDE9E2;
+      box-shadow: 0 2px 12px rgba(61, 58, 54, 0.1);
+      display: block;
+    }
+
+    /* === DIM EDITOR MODAL === */
+    .dim-editor {
+      position: absolute;
+      z-index: 50;
+      background: #FFFCF8;
+      border: 2px solid #7A6B8F;
+      border-radius: 8px;
+      padding: 12px 14px;
+      box-shadow: 0 8px 24px rgba(61, 58, 54, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 190px;
+    }
+
+    .dim-editor[hidden] { display: none !important; }
+
+    .dim-editor label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #5C4F72;
+    }
+
+    .dim-editor input {
+      height: 38px;
+      font-size: 19px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border: 1px solid #C4BFB6;
+      border-radius: 6px;
+      font-family: inherit;
+      color: #3D3A36;
+    }
+
+    .dim-editor input:focus {
+      outline: 2px solid #7A6B8F;
+      outline-offset: -1px;
+    }
+
+    .dim-editor select {
+      height: 38px;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border: 1px solid #C4BFB6;
+      border-radius: 6px;
+      font-family: inherit;
+      color: #3D3A36;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .dim-editor select:focus {
+      outline: 2px solid #7A6B8F;
+      outline-offset: -1px;
+    }
+
+    .dim-editor-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .dim-editor-actions button {
+      flex: 1;
+      padding: 7px 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .dim-editor-ok { background: #7A6B8F; color: #fff; }
+    .dim-editor-ok:hover { filter: brightness(1.08); }
+    .dim-editor-cancel {
+      background: #EDE9E2;
+      color: #5A5550;
+      border: 1px solid #C9C4BB !important;
+    }
+
+    /* === STYLISTYKA KÓŁEK I WYMIARÓW SVG === */
+    @keyframes rogPulse {
+      0%, 100% { fill: rgba(16, 185, 129, 0.38); stroke-width: 4.5; }
+      50% { fill: rgba(16, 185, 129, 0.55); stroke-width: 6; }
+    }
+
+    .dim-editable { cursor: pointer; pointer-events: all; }
+    .dim-editable text { pointer-events: none; }
+
+    /* Zielona pigułka w środku szafki — wybór typu frontów (jak w rogowej) */
+    .dim-editable.dim-green .dim-hit {
+      fill: rgba(16, 185, 129, 0.42);
+      stroke: #10b981;
+      stroke-width: 4;
+      animation: rogPulse 2.5s ease-in-out infinite;
+    }
+    .dim-editable.dim-green:hover .dim-hit {
+      fill: rgba(16, 185, 129, 0.55);
+      stroke: #34d399;
+      stroke-width: 5;
+    }
+    .dim-editable.dim-green text {
+      fill: #ffffff;
+      font-weight: 800;
+    }
+
+    .dim-editable.dim-green-badge { cursor: pointer; }
+    .dim-editable.dim-green-badge .dim-badge-ring {
+      fill: rgba(16, 185, 129, 0.38);
+      stroke: #10b981;
+      stroke-width: 4.5;
+      animation: rogPulse 2.5s ease-in-out infinite;
+      pointer-events: all;
+      cursor: pointer;
+    }
+    .dim-editable.dim-green-badge:hover .dim-badge-ring {
+      fill: rgba(16, 185, 129, 0.55);
+      stroke: #34d399;
+      stroke-width: 5.5;
+      animation-play-state: paused;
+    }
+    .dim-editable.dim-green-badge .dim-badge-num {
+      fill: #ffffff;
+      font-weight: 800;
+      pointer-events: none;
+    }
+    .dim-editable.dim-green-badge .dim-badge-label {
+      fill: #d1fae5;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .dim-result-board-dim { pointer-events: none; }
+    .dim-result-board-dim .dim-badge-ring {
+      fill: #ffffff;
+      stroke: #C4BFB6;
+      stroke-width: 3.5;
+    }
+    .dim-result-board-dim .dim-badge-num {
+      fill: #3D3A36;
+      font-weight: 800;
+      pointer-events: none;
+    }
+    .dim-result-board-dim .dim-badge-label {
+      fill: #6B6660;
+      font-weight: 400;
+      pointer-events: none;
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- GŁÓWNA SCENA Z SVG -->
+<div class="svg-wrap">
+  <div class="svg-container" id="svgContainer">
+    <svg id="visualizer" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="hatch-panel" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#94a3b8" stroke-width="1.5" />
+        </pattern>
+      </defs>
+
+      <g id="cabinetLayer"></g>
+      <g id="dimsGroup"></g>
+    </svg>
+
+    <!-- FLOATING DIM EDITOR -->
+    <div id="dimEditor" class="dim-editor" hidden>
+      <label id="dimEditorLabel">Wymiar</label>
+      <input type="number" id="dimEditorInput">
+      <select id="dimEditorSelect" hidden>
+        <option value="drzwi">Drzwi</option>
+        <option value="szuflady">Szuflady</option>
+      </select>
+      <div class="dim-editor-actions">
+        <button type="button" class="dim-editor-cancel" id="dimEditorCancel">Anuluj</button>
+        <button type="button" class="dim-editor-ok" id="dimEditorOk">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UKRYTE POLA STANU -->
+<input id="lenK" type="hidden" value="1150">
+<input id="lenD" type="hidden" value="510">
+<input id="lenF" type="hidden" value="596">
+<input id="lenT" type="hidden" value="18">
+<input id="lenTYP" type="hidden" value="drzwi">
+
+<script>
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+let currentType = 'drzwi';
+let dimEditorField = null;
+
+const EDITABLE_DIMS = {
+  K: { min: 400, max: 2500, step: 10, label: 'Zewn. szerokość korpusu', unit: ' mm' },
+  D: { min: 200, max: 1200, step: 10, label: 'Głębokość korpusu (obrys)', unit: ' mm' },
+  F: { min: 200, max: 1200, step: 1, label: 'Szerokość frontu', unit: ' mm' },
+  T: { min: 10, max: 38, step: 1, label: 'Grubość płyty', unit: ' mm' },
+  TYP: { label: 'Typ frontu' }
+};
+
+function setType(type) {
+  currentType = type;
+  const inputTyp = document.getElementById('lenTYP');
+  if (inputTyp) inputTyp.value = type;
+
+  draw();
+}
+
+function placeHitRectFromElement(rectEl, textEl, padX, padY) {
+  var bbox;
+  try { bbox = textEl.getBBox(); } catch(e) { return false; }
+  if (!bbox || bbox.width < 1 || bbox.height < 1) return false;
+  rectEl.setAttribute('x', bbox.x - padX);
+  rectEl.setAttribute('y', bbox.y - padY);
+  rectEl.setAttribute('width', bbox.width + padX * 2);
+  rectEl.setAttribute('height', bbox.height + padY * 2);
+  return true;
+}
+
+function applyHitRectRound(rectEl) {
+  const w = parseFloat(rectEl.getAttribute('width')) || 0;
+  const h = parseFloat(rectEl.getAttribute('height')) || 0;
+  const rx = Math.min(14, w * 0.2, h * 0.4);
+  rectEl.setAttribute('rx', rx);
+  rectEl.setAttribute('ry', rx);
+}
+
+function syncAllDimHitRects() {
+  document.querySelectorAll('.dim-editable:not(.dim-green-badge)').forEach(g => {
+    const text = g.querySelector('text');
+    const rect = g.querySelector('.dim-hit');
+    if (!text || !rect) return;
+    const padX = parseFloat(g.dataset.hitPadX || '24');
+    const padY = parseFloat(g.dataset.hitPadY || '14');
+    placeHitRectFromElement(rect, text, padX, padY);
+    applyHitRectRound(rect);
+  });
+}
+
+function addEditableDim(layer, opts) {
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('class', 'dim-editable dim-green' + (opts.className ? ' ' + opts.className : ''));
+  g.setAttribute('data-field', opts.field);
+  g.setAttribute('role', 'button');
+  g.setAttribute('tabindex', '0');
+  g.dataset.hitPadX = String(opts.hitPadX ?? 24);
+  g.dataset.hitPadY = String(opts.hitPadY ?? 14);
+
+  const hit = document.createElementNS(SVG_NS, 'rect');
+  hit.setAttribute('class', 'dim-hit');
+  g.appendChild(hit);
+
+  const text = document.createElementNS(SVG_NS, 'text');
+  text.setAttribute('x', opts.x);
+  text.setAttribute('y', opts.y);
+  text.setAttribute('font-size', opts.fontSize || 30);
+  text.setAttribute('font-weight', '800');
+  text.setAttribute('font-family', 'sans-serif');
+  text.setAttribute('text-anchor', opts.anchor || 'middle');
+  text.setAttribute('dominant-baseline', 'middle');
+  if (opts.textTransform) text.setAttribute('transform', opts.textTransform);
+  text.textContent = opts.text;
+  g.appendChild(text);
+
+  layer.appendChild(g);
+
+  const activate = function(e) {
+    e.preventDefault(); e.stopPropagation();
+    openDimEditor(opts.field, e);
+  };
+  g.addEventListener('pointerdown', activate);
+  g.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDimEditor(opts.field, e); }
+  });
+}
+
+function openDimEditor(field, anchorEvent) {
+  dimEditorField = field;
+  const editor = document.getElementById('dimEditor');
+  const editorInput = document.getElementById('dimEditorInput');
+  const editorSelect = document.getElementById('dimEditorSelect');
+  const editorLabel = document.getElementById('dimEditorLabel');
+
+  if (field === 'TYP') {
+    editorLabel.textContent = 'Typ frontu';
+    editorInput.hidden = true;
+    editorSelect.hidden = false;
+    editorSelect.value = currentType;
+  } else {
+    const cfg = EDITABLE_DIMS[field];
+    const formInput = document.getElementById('len' + field);
+    if (!cfg || !formInput) return;
+    editorSelect.hidden = true;
+    editorInput.hidden = false;
+    editorLabel.textContent = cfg.label + (cfg.unit ? ` (${cfg.unit.trim()})` : '');
+    editorInput.min = cfg.min;
+    editorInput.max = cfg.max;
+    editorInput.step = cfg.step;
+    editorInput.value = formInput.value;
+  }
+
+  editor.hidden = false;
+
+  const container = document.getElementById('svgContainer');
+  const rect = container.getBoundingClientRect();
+  const clientX = anchorEvent?.clientX ?? (rect.left + rect.width / 2);
+  const clientY = anchorEvent?.clientY ?? (rect.top + rect.height / 2);
+  const editorWidth = 220;
+  const editorHeight = 130;
+  let left = clientX - rect.left - editorWidth / 2;
+  let top = clientY - rect.top - editorHeight - 20;
+
+  if (left < 10) left = 10;
+  if (left + editorWidth > rect.width - 10) left = rect.width - editorWidth - 10;
+  if (top < 10) top = clientY - rect.top + 30;
+  if (top + editorHeight > rect.height - 10) top = rect.height - editorHeight - 10;
+
+  editor.style.left = left + 'px';
+  editor.style.top = top + 'px';
+
+  setTimeout(() => {
+    if (field === 'TYP') {
+      editorSelect.focus();
+    } else {
+      editorInput.focus();
+      editorInput.select();
+    }
+  }, 10);
+}
+
+function closeDimEditor() {
+  const editor = document.getElementById('dimEditor');
+  editor.hidden = true;
+  dimEditorField = null;
+}
+
+function commitDimEditor() {
+  if (!dimEditorField) return;
+  if (dimEditorField === 'TYP') {
+    const editorSelect = document.getElementById('dimEditorSelect');
+    setType(editorSelect.value);
+    closeDimEditor();
+    return;
+  }
+
+  const editorInput = document.getElementById('dimEditorInput');
+  const formInput = document.getElementById('len' + dimEditorField);
+  const cfg = EDITABLE_DIMS[dimEditorField];
+  let val = parseFloat(editorInput.value);
+
+  if (isNaN(val)) { closeDimEditor(); return; }
+  if (cfg.min !== undefined && val < cfg.min) val = cfg.min;
+  if (cfg.max !== undefined && val > cfg.max) val = cfg.max;
+
+  formInput.value = String(val);
+  closeDimEditor();
+  draw();
+}
+
+function isDimUiTarget(target) {
+  return target && (target.closest('#dimEditor') || target.closest('.dim-editable'));
+}
+
+// === RYSOWANIE LINII ARCHITEKTONICZNYCH ===
+function addLinearDim(layer, opts) {
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('class', 'dim-line-guide');
+  g.setAttribute('pointer-events', 'none');
+
+  // Linia pomocnicza 1
+  const ext1 = document.createElementNS(SVG_NS, 'line');
+  ext1.setAttribute('x1', opts.ext1.x1);
+  ext1.setAttribute('y1', opts.ext1.y1);
+  ext1.setAttribute('x2', opts.ext1.x2);
+  ext1.setAttribute('y2', opts.ext1.y2);
+  ext1.setAttribute('stroke', '#059669');
+  ext1.setAttribute('stroke-width', '1.5');
+  ext1.setAttribute('stroke-dasharray', '5,4');
+  g.appendChild(ext1);
+
+  // Linia pomocnicza 2
+  const ext2 = document.createElementNS(SVG_NS, 'line');
+  ext2.setAttribute('x1', opts.ext2.x1);
+  ext2.setAttribute('y1', opts.ext2.y1);
+  ext2.setAttribute('x2', opts.ext2.x2);
+  ext2.setAttribute('y2', opts.ext2.y2);
+  ext2.setAttribute('stroke', '#059669');
+  ext2.setAttribute('stroke-width', '1.5');
+  ext2.setAttribute('stroke-dasharray', '5,4');
+  g.appendChild(ext2);
+
+  // Linia wymiarowa
+  const dimLine = document.createElementNS(SVG_NS, 'line');
+  dimLine.setAttribute('x1', opts.dim.x1);
+  dimLine.setAttribute('y1', opts.dim.y1);
+  dimLine.setAttribute('x2', opts.dim.x2);
+  dimLine.setAttribute('y2', opts.dim.y2);
+  dimLine.setAttribute('stroke', '#10b981');
+  dimLine.setAttribute('stroke-width', '2.5');
+  g.appendChild(dimLine);
+
+  // Grot strzałki 1
+  const a1 = document.createElementNS(SVG_NS, 'path');
+  const d1 = opts.arrow1Dir || { x: -1, y: 0 };
+  const nx1 = -d1.y, ny1 = d1.x;
+  const p1x = opts.dim.x1, p1y = opts.dim.y1;
+  const len = 14, w = 4.5;
+  a1.setAttribute('d', `M ${p1x} ${p1y} L ${p1x - d1.x*len + nx1*w} ${p1y - d1.y*len + ny1*w} L ${p1x - d1.x*len - nx1*w} ${p1y - d1.y*len - ny1*w} Z`);
+  a1.setAttribute('fill', '#10b981');
+  g.appendChild(a1);
+
+  // Grot strzałki 2
+  const a2 = document.createElementNS(SVG_NS, 'path');
+  const d2 = opts.arrow2Dir || { x: 1, y: 0 };
+  const nx2 = -d2.y, ny2 = d2.x;
+  const p2x = opts.dim.x2, p2y = opts.dim.y2;
+  a2.setAttribute('d', `M ${p2x} ${p2y} L ${p2x - d2.x*len + nx2*w} ${p2y - d2.y*len + ny2*w} L ${p2x - d2.x*len - nx2*w} ${p2y - d2.y*len - ny2*w} Z`);
+  a2.setAttribute('fill', '#10b981');
+  g.appendChild(a2);
+
+  // Kropki bazowe
+  if (opts.dot1) {
+    const dot1 = document.createElementNS(SVG_NS, 'circle');
+    dot1.setAttribute('cx', opts.dot1.x); dot1.setAttribute('cy', opts.dot1.y);
+    dot1.setAttribute('r', '4'); dot1.setAttribute('fill', '#059669');
+    g.appendChild(dot1);
+  }
+  if (opts.dot2) {
+    const dot2 = document.createElementNS(SVG_NS, 'circle');
+    dot2.setAttribute('cx', opts.dot2.x); dot2.setAttribute('cy', opts.dot2.y);
+    dot2.setAttribute('r', '4'); dot2.setAttribute('fill', '#059669');
+    g.appendChild(dot2);
+  }
+
+  layer.appendChild(g);
+}
+
+// === ZIELONE KÓŁKO EDYTOWALNE ===
+function addGreenBadge(layer, cx, cy, val, field, subVal, customRadius) {
+  const r = customRadius || 58;
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('class', 'dim-editable dim-green-badge');
+  g.setAttribute('data-field', field);
+  g.setAttribute('role', 'button');
+  g.setAttribute('tabindex', '0');
+
+  const c = document.createElementNS(SVG_NS, 'circle');
+  c.setAttribute('class', 'dim-badge-ring');
+  c.setAttribute('cx', cx); c.setAttribute('cy', cy);
+  c.setAttribute('r', r);
+  g.appendChild(c);
+
+  if (subVal !== undefined && subVal !== null) {
+    // Wartość górna
+    const tTop = document.createElementNS(SVG_NS, 'text');
+    tTop.setAttribute('x', cx);
+    tTop.setAttribute('y', cy - 15);
+    tTop.setAttribute('text-anchor', 'middle');
+    tTop.setAttribute('dominant-baseline', 'central');
+    tTop.setAttribute('font-family', 'sans-serif');
+    tTop.setAttribute('font-size', '32');
+    tTop.setAttribute('font-weight', '800');
+    tTop.setAttribute('fill', '#ffffff');
+    tTop.textContent = val;
+    g.appendChild(tTop);
+
+    // Kreska
+    const sep = document.createElementNS(SVG_NS, 'line');
+    sep.setAttribute('x1', cx - 34);
+    sep.setAttribute('y1', cy);
+    sep.setAttribute('x2', cx + 34);
+    sep.setAttribute('y2', cy);
+    sep.setAttribute('stroke', '#34d399');
+    sep.setAttribute('stroke-width', '2.5');
+    sep.setAttribute('stroke-linecap', 'round');
+    g.appendChild(sep);
+
+    // Wartość dolna
+    const tBot = document.createElementNS(SVG_NS, 'text');
+    tBot.setAttribute('x', cx);
+    tBot.setAttribute('y', cy + 17);
+    tBot.setAttribute('text-anchor', 'middle');
+    tBot.setAttribute('dominant-baseline', 'central');
+    tBot.setAttribute('font-family', 'sans-serif');
+    tBot.setAttribute('font-size', '28');
+    tBot.setAttribute('font-weight', '700');
+    tBot.setAttribute('fill', '#d1fae5');
+    tBot.textContent = subVal;
+    g.appendChild(tBot);
+  } else {
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', cx); t.setAttribute('y', cy);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'middle');
+    t.setAttribute('font-family', 'sans-serif');
+
+    const n = document.createElementNS(SVG_NS, 'tspan');
+    n.setAttribute('class', 'dim-badge-num');
+    n.setAttribute('x', cx); n.setAttribute('dy', '-7');
+    n.setAttribute('font-size', r > 50 ? '40' : '30');
+    n.textContent = val;
+    t.appendChild(n);
+
+    const u = document.createElementNS(SVG_NS, 'tspan');
+    u.setAttribute('class', 'dim-badge-label');
+    u.setAttribute('x', cx); u.setAttribute('dy', r > 50 ? '28' : '22');
+    u.setAttribute('font-size', r > 50 ? '24' : '18');
+    u.textContent = 'mm';
+    t.appendChild(u);
+
+    g.appendChild(t);
+  }
+
+  const activate = function(e) {
+    e.preventDefault(); e.stopPropagation();
+    openDimEditor(field, e);
+  };
+  g.addEventListener('pointerdown', activate);
+  g.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDimEditor(field, e); }
+  });
+
+  layer.appendChild(g);
+}
+
+// === BIAŁE KÓŁKO WYNIKOWE ===
+function addWhiteBadge(layer, cx, cy, val, customRadius, labelText, labelPos = 'bottom') {
+  const r = customRadius || 50;
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('class', 'dim-result-board-dim');
+
+  const c = document.createElementNS(SVG_NS, 'circle');
+  c.setAttribute('class', 'dim-badge-ring');
+  c.setAttribute('cx', cx); c.setAttribute('cy', cy);
+  c.setAttribute('r', r);
+  g.appendChild(c);
+
+  const t = document.createElementNS(SVG_NS, 'text');
+  t.setAttribute('x', cx); t.setAttribute('y', cy);
+  t.setAttribute('text-anchor', 'middle');
+  t.setAttribute('dominant-baseline', 'middle');
+  t.setAttribute('font-family', 'sans-serif');
+
+  const n = document.createElementNS(SVG_NS, 'tspan');
+  n.setAttribute('class', 'dim-badge-num');
+  n.setAttribute('x', cx); n.setAttribute('dy', '-8');
+  n.setAttribute('font-size', '38');
+  n.textContent = val;
+  t.appendChild(n);
+
+  const u = document.createElementNS(SVG_NS, 'tspan');
+  u.setAttribute('class', 'dim-badge-label');
+  u.setAttribute('x', cx); u.setAttribute('dy', '26');
+  u.setAttribute('font-size', '22');
+  u.textContent = 'mm';
+  t.appendChild(u);
+
+  g.appendChild(t);
+
+  // Podpowiedź / etykieta pod lub nad kółkiem
+  if (labelText) {
+    const lbl = document.createElementNS(SVG_NS, 'text');
+    lbl.setAttribute('x', cx);
+    lbl.setAttribute('y', labelPos === 'top' ? (cy - r - 14) : (cy + r + 24));
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('font-size', '16');
+    lbl.setAttribute('font-weight', '700');
+    lbl.setAttribute('fill', '#475569');
+    lbl.textContent = labelText;
+    g.appendChild(lbl);
+  }
+
+  layer.appendChild(g);
+}
+
+// === GŁÓWNA FUNKCJA RYSOWANIA SCENY ===
+function draw() {
+  const K = parseFloat(document.getElementById('lenK').value) || 1150;
+  const D = parseFloat(document.getElementById('lenD').value) || 510;
+  const F = parseFloat(document.getElementById('lenF').value) || 596;
+  const T = parseFloat(document.getElementById('lenT').value) || 18;
+
+  // Stałe montażowe wg katalogu Blum i wytycznych stolarskich:
+  // 1. Z prawej strony front ma szczelinę 2 mm (nie wystaje poza obrys szafki)
+  const rightGap = 2;
+
+  // 2. Światło montażowe (wnęka X) wg wzoru z katalogu Blum:
+  // Wzór z katalogu Blum: X = F - (3+9+16), wartość odejmowana wynosi 28 mm (zamiast wcześniejszego 30 mm)
+  const X = Math.max(0, F - (3+9+16));
+
+  const cabLayer = document.getElementById('cabinetLayer');
+  const dimsLayer = document.getElementById('dimsGroup');
+  const svg = document.getElementById('visualizer');
+
+  cabLayer.innerHTML = '';
+  dimsLayer.innerHTML = '';
+
+  const originX = 150;
+  const originY = 160;
+
+  // Położenie prawej krawędzi korpusu i frontu:
+  const rightCabinetX = originX + K;
+  const rightSideInnerX = rightCabinetX - T;
+  const frontEndX = rightCabinetX - rightGap;
+  const frontStartX = frontEndX - F;
+  const frontY = originY + D;
+
+  // Światło montażowe (otwór X) — początek w świetle korpusu:
+  const swiatloStartX = rightSideInnerX - X;
+
+  // Panel przedni (blenda Y):
+  const panelStartX = originX + T;
+  const panelEndX = swiatloStartX;
+  const Y = Math.max(0, panelEndX - panelStartX);
+
+  // Nałożenie frontu na panel przedni:
+  const panelOverlap = Math.round(panelEndX - frontStartX);
+
+  // 1. ZARYS WIEŃCA (K x D)
+  const wieniec = document.createElementNS(SVG_NS, 'rect');
+  wieniec.setAttribute('x', originX);
+  wieniec.setAttribute('y', originY);
+  wieniec.setAttribute('width', K);
+  wieniec.setAttribute('height', D);
+  wieniec.setAttribute('fill', '#fdfbf7');
+  wieniec.setAttribute('stroke', '#7A6B8F');
+  wieniec.setAttribute('stroke-width', '2');
+  cabLayer.appendChild(wieniec);
+
+  // 2. BOKI KORPUSU (grubość T, długość D)
+  const bokL = document.createElementNS(SVG_NS, 'rect');
+  bokL.setAttribute('x', originX);
+  bokL.setAttribute('y', originY);
+  bokL.setAttribute('width', T);
+  bokL.setAttribute('height', D);
+  bokL.setAttribute('fill', '#7A6B8F');
+  bokL.setAttribute('opacity', '0.45');
+  bokL.setAttribute('stroke', '#5C4F72');
+  bokL.setAttribute('stroke-width', '1.5');
+  cabLayer.appendChild(bokL);
+
+  const bokP = document.createElementNS(SVG_NS, 'rect');
+  bokP.setAttribute('x', rightSideInnerX);
+  bokP.setAttribute('y', originY);
+  bokP.setAttribute('width', T);
+  bokP.setAttribute('height', D);
+  bokP.setAttribute('fill', '#7A6B8F');
+  bokP.setAttribute('opacity', '0.45');
+  bokP.setAttribute('stroke', '#5C4F72');
+  bokP.setAttribute('stroke-width', '1.5');
+  cabLayer.appendChild(bokP);
+
+  // 3. PLECY SZAFKI HDF (grubość 4mm)
+  const plecy = document.createElementNS(SVG_NS, 'rect');
+  plecy.setAttribute('x', originX + T);
+  plecy.setAttribute('y', originY);
+  plecy.setAttribute('width', Math.max(0, K - 2*T));
+  plecy.setAttribute('height', 4);
+  plecy.setAttribute('fill', '#64748b');
+  cabLayer.appendChild(plecy);
+
+  // 4. PANEL PRZEDNI (w obrysie szafki)
+  const panelY = originY + D - T;
+  const panelEl = document.createElementNS(SVG_NS, 'rect');
+  panelEl.setAttribute('x', panelStartX);
+  panelEl.setAttribute('y', panelY);
+  panelEl.setAttribute('width', Y);
+  panelEl.setAttribute('height', T);
+  panelEl.setAttribute('fill', 'url(#hatch-panel)');
+  panelEl.setAttribute('stroke', '#475569');
+  panelEl.setAttribute('stroke-width', '2');
+  cabLayer.appendChild(panelEl);
+
+  // 5. FORMATKA W ŚRODKU — TYLKO DLA SZUFLAD (do montażu prowadnicy)
+  if (currentType === 'szuflady' && Y >= T) {
+    const dividerX = panelEndX - T;
+    const divider = document.createElementNS(SVG_NS, 'rect');
+    divider.setAttribute('x', dividerX);
+    divider.setAttribute('y', originY + 16);
+    divider.setAttribute('width', T);
+    divider.setAttribute('height', Math.max(0, D - 16 - T));
+    divider.setAttribute('fill', '#94a3b8');
+    divider.setAttribute('stroke', '#475569');
+    divider.setAttribute('stroke-width', '1.5');
+    cabLayer.appendChild(divider);
+
+    const divTxt = document.createElementNS(SVG_NS, 'text');
+    divTxt.setAttribute('x', dividerX + T / 2);
+    divTxt.setAttribute('y', originY + 16 + (D - 16 - T) / 2);
+    divTxt.setAttribute('transform', `rotate(-90 ${dividerX + T / 2} ${originY + 16 + (D - 16 - T) / 2})`);
+    divTxt.setAttribute('font-size', '13');
+    divTxt.setAttribute('fill', '#ffffff');
+    divTxt.setAttribute('font-weight', '700');
+    divTxt.setAttribute('text-anchor', 'middle');
+    divTxt.textContent = 'Formatka szuflad';
+    cabLayer.appendChild(divTxt);
+  }
+
+  // 6. FRONT NAKŁADANY I WYPOSAŻENIE
+  if (currentType === 'drzwi') {
+    // Front drzwiowy nakładany
+    const front = document.createElementNS(SVG_NS, 'rect');
+    front.setAttribute('x', frontStartX);
+    front.setAttribute('y', frontY);
+    front.setAttribute('width', F);
+    front.setAttribute('height', T);
+    front.setAttribute('fill', '#2563eb');
+    front.setAttribute('stroke', '#1d4ed8');
+    front.setAttribute('stroke-width', '2.5');
+    front.setAttribute('rx', '2');
+    cabLayer.appendChild(front);
+
+  } else {
+    // Szuflady i prowadnice (lewa na formatce za blendą, prawa na prawym boku korpusu)
+    const guideL_X = swiatloStartX + 2;
+    const guideR_X = rightSideInnerX - 14;
+    const guideD = Math.max(50, D - T - 40);
+
+    const gL = document.createElementNS(SVG_NS, 'rect');
+    gL.setAttribute('x', guideL_X); gL.setAttribute('y', originY + 20);
+    gL.setAttribute('width', '12'); gL.setAttribute('height', guideD);
+    gL.setAttribute('fill', '#10b981'); gL.setAttribute('rx', '2');
+    cabLayer.appendChild(gL);
+
+    const gR = document.createElementNS(SVG_NS, 'rect');
+    gR.setAttribute('x', guideR_X); gR.setAttribute('y', originY + 20);
+    gR.setAttribute('width', '12'); gR.setAttribute('height', guideD);
+    gR.setAttribute('fill', '#10b981'); gR.setAttribute('rx', '2');
+    cabLayer.appendChild(gR);
+
+    // Skrzynia szuflady w świetle
+    const drawerX = guideL_X + 14;
+    const drawerW = Math.max(20, guideR_X - drawerX - 2);
+    const drawer = document.createElementNS(SVG_NS, 'rect');
+    drawer.setAttribute('x', drawerX);
+    drawer.setAttribute('y', originY + 30);
+    drawer.setAttribute('width', drawerW);
+    drawer.setAttribute('height', Math.max(30, guideD - 12));
+    drawer.setAttribute('fill', '#ecfdf5');
+    drawer.setAttribute('stroke', '#059669');
+    drawer.setAttribute('stroke-width', '2');
+    cabLayer.appendChild(drawer);
+
+    // Front szuflady nakładany
+    const front = document.createElementNS(SVG_NS, 'rect');
+    front.setAttribute('x', frontStartX);
+    front.setAttribute('y', frontY);
+    front.setAttribute('width', F);
+    front.setAttribute('height', T);
+    front.setAttribute('fill', '#059669');
+    front.setAttribute('stroke', '#047857');
+    front.setAttribute('stroke-width', '2.5');
+    front.setAttribute('rx', '2');
+    cabLayer.appendChild(front);
+  }
+
+  // 7. PRZEŁĄCZNIK W ŚRODKU SZAFKI (DRZWI / SZUFLADY)
+  // Przesunięty w lewo (do lewej strefy szafki za panelem), by nie nachodził na szufladę
+  const swX = originX + T + 120;
+  const swY = originY + 65;
+  const swG = document.createElementNS(SVG_NS, 'g');
+  swG.setAttribute('class', 'cabinet-switch-group');
+  swG.setAttribute('transform', `translate(${swX - 105}, ${swY - 20})`);
+
+  const swBg = document.createElementNS(SVG_NS, 'rect');
+  swBg.setAttribute('width', '210');
+  swBg.setAttribute('height', '40');
+  swBg.setAttribute('rx', '8');
+  swBg.setAttribute('fill', '#ffffff');
+  swBg.setAttribute('stroke', '#C4BFB6');
+  swBg.setAttribute('stroke-width', '2');
+  swG.appendChild(swBg);
+
+  // Przycisk Drzwi w szafce
+  const btnD = document.createElementNS(SVG_NS, 'g');
+  btnD.setAttribute('cursor', 'pointer');
+  btnD.setAttribute('role', 'button');
+  const rD = document.createElementNS(SVG_NS, 'rect');
+  rD.setAttribute('x', '4');
+  rD.setAttribute('y', '4');
+  rD.setAttribute('width', '98');
+  rD.setAttribute('height', '32');
+  rD.setAttribute('rx', '6');
+  rD.setAttribute('fill', currentType === 'drzwi' ? '#10b981' : '#f1f5f9');
+  btnD.appendChild(rD);
+  const tD = document.createElementNS(SVG_NS, 'text');
+  tD.setAttribute('x', '53');
+  tD.setAttribute('y', '25');
+  tD.setAttribute('text-anchor', 'middle');
+  tD.setAttribute('font-size', '15');
+  tD.setAttribute('font-weight', '800');
+  tD.setAttribute('fill', currentType === 'drzwi' ? '#ffffff' : '#5A5550');
+  tD.setAttribute('pointer-events', 'none');
+  tD.textContent = 'Drzwi';
+  btnD.appendChild(tD);
+  btnD.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); setType('drzwi'); });
+  swG.appendChild(btnD);
+
+  // Przycisk Szuflady w szafce
+  const btnSz = document.createElementNS(SVG_NS, 'g');
+  btnSz.setAttribute('cursor', 'pointer');
+  btnSz.setAttribute('role', 'button');
+  const rSz = document.createElementNS(SVG_NS, 'rect');
+  rSz.setAttribute('x', '106');
+  rSz.setAttribute('y', '4');
+  rSz.setAttribute('width', '98');
+  rSz.setAttribute('height', '32');
+  rSz.setAttribute('rx', '6');
+  rSz.setAttribute('fill', currentType === 'szuflady' ? '#10b981' : '#f1f5f9');
+  btnSz.appendChild(rSz);
+  const tSz = document.createElementNS(SVG_NS, 'text');
+  tSz.setAttribute('x', '155');
+  tSz.setAttribute('y', '25');
+  tSz.setAttribute('text-anchor', 'middle');
+  tSz.setAttribute('font-size', '15');
+  tSz.setAttribute('font-weight', '800');
+  tSz.setAttribute('fill', currentType === 'szuflady' ? '#ffffff' : '#5A5550');
+  tSz.setAttribute('pointer-events', 'none');
+  tSz.textContent = 'Szuflady';
+  btnSz.appendChild(tSz);
+  btnSz.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); setType('szuflady'); });
+  swG.appendChild(btnSz);
+
+  cabLayer.appendChild(swG);
+
+  // ==========================================
+  // LINIE WYMIAROWE I KÓŁKA (W STYLU ROGOWEJ)
+  // ==========================================
+
+  // 1. SZEROKOŚĆ KORPUSU (ZIELONE KÓŁKO GÓRA)
+  const dimKY = originY - 45;
+  const badgeKY = dimKY - 65;
+  const midKX = originX + K / 2;
+  addLinearDim(dimsLayer, {
+    dot1: { x: originX, y: originY },
+    dot2: { x: rightCabinetX, y: originY },
+    ext1: { x1: originX, y1: originY, x2: originX, y2: dimKY - 18 },
+    ext2: { x1: rightCabinetX, y1: originY, x2: rightCabinetX, y2: dimKY - 18 },
+    dim: { x1: originX, y1: dimKY, x2: rightCabinetX, y2: dimKY },
+    arrow1Dir: { x: -1, y: 0 },
+    arrow2Dir: { x: 1, y: 0 }
+  });
+  addGreenBadge(dimsLayer, midKX, badgeKY, K, 'K');
+
+  // 2. PANEL PRZEDNI (WYMIAR W SZAFCE — ZGODNY Z NORMAMI, ZERO PRZECIĘĆ LINII)
+  const dimPanelY = panelY - 45;
+  const badgePanelY = dimPanelY - 65;
+  const midYX = panelStartX + Y / 2;
+  if (Y > 0) {
+    addLinearDim(dimsLayer, {
+      dot1: { x: panelStartX, y: panelY },
+      dot2: { x: panelEndX, y: panelY },
+      ext1: { x1: panelStartX, y1: panelY, x2: panelStartX, y2: dimPanelY - 14 },
+      ext2: { x1: panelEndX, y1: panelY, x2: panelEndX, y2: dimPanelY - 14 },
+      dim: { x1: panelStartX, y1: dimPanelY, x2: panelEndX, y2: dimPanelY },
+      arrow1Dir: { x: -1, y: 0 },
+      arrow2Dir: { x: 1, y: 0 }
+    });
+    addWhiteBadge(dimsLayer, midYX, badgePanelY, Math.round(Y), 50);
+  }
+
+  // 3. SZEREG WYMIAROWY ŁAŃCUCHOWY: NAŁOŻENIE FRONTU + ŚWIATŁO SZAFKI (W JEDNEJ LINII)
+  const dimChainY = originY + D + 46;
+  const badgeSwiatloY = dimChainY + 68;
+  const midXX = swiatloStartX + X / 2;
+
+  // --- CZĘŚĆ 1: NAŁOŻENIE FRONTU NA PANEL (LINIA WYDŁUŻONA W LEWO WG SZTUKI RYSUNKU) ---
+  const overlapG = document.createElementNS(SVG_NS, 'g');
+  overlapG.setAttribute('class', 'dim-line-guide');
+  overlapG.setAttribute('pointer-events', 'none');
+
+  // Linia pomocnicza lewa (początek frontu)
+  const extL = document.createElementNS(SVG_NS, 'line');
+  extL.setAttribute('x1', frontStartX);
+  extL.setAttribute('y1', frontY + T);
+  extL.setAttribute('x2', frontStartX);
+  extL.setAttribute('y2', dimChainY + 16);
+  extL.setAttribute('stroke', '#059669');
+  extL.setAttribute('stroke-width', '1.5');
+  extL.setAttribute('stroke-dasharray', '4,3');
+  overlapG.appendChild(extL);
+
+  // Kropka bazowa lewa
+  const dotL = document.createElementNS(SVG_NS, 'circle');
+  dotL.setAttribute('cx', frontStartX); dotL.setAttribute('cy', frontY + T);
+  dotL.setAttribute('r', '3'); dotL.setAttribute('fill', '#059669');
+  overlapG.appendChild(dotL);
+
+  // Linia wymiarowa nałożenia: przedłużona w lewo (półka na liczbę wymiaru), łączy się w łańcuch z wymiarem światła
+  const overlapLine = document.createElementNS(SVG_NS, 'line');
+  overlapLine.setAttribute('x1', frontStartX - 55);
+  overlapLine.setAttribute('y1', dimChainY);
+  overlapLine.setAttribute('x2', panelEndX);
+  overlapLine.setAttribute('y2', dimChainY);
+  overlapLine.setAttribute('stroke', '#10b981');
+  overlapLine.setAttribute('stroke-width', '2.5');
+  overlapG.appendChild(overlapLine);
+
+  // Grot lewy (przy krawędzi frontStartX, skierowany w prawo w stronę wymiaru nałożenia)
+  const aL = document.createElementNS(SVG_NS, 'path');
+  const lenA = 12, wA = 3.8;
+  aL.setAttribute('d', `M ${frontStartX} ${dimChainY} L ${frontStartX - lenA} ${dimChainY - wA} L ${frontStartX - lenA} ${dimChainY + wA} Z`);
+  aL.setAttribute('fill', '#10b981');
+  overlapG.appendChild(aL);
+
+  // Tekst wymiaru umieszczony na wydłużonej linii po lewej stronie (zgodnie z PN/ISO)
+  const overlapTxt = document.createElementNS(SVG_NS, 'text');
+  overlapTxt.setAttribute('x', frontStartX - 28);
+  overlapTxt.setAttribute('y', dimChainY - 6);
+  overlapTxt.setAttribute('text-anchor', 'middle');
+  overlapTxt.setAttribute('font-size', '17');
+  overlapTxt.setAttribute('font-weight', '800');
+  overlapTxt.setAttribute('font-family', 'sans-serif');
+  overlapTxt.setAttribute('fill', '#047857');
+  overlapTxt.textContent = panelOverlap > 0 ? panelOverlap : '';
+  overlapG.appendChild(overlapTxt);
+
+  dimsLayer.appendChild(overlapG);
+
+  // --- CZĘŚĆ 2: ŚWIATŁO SZAFKI (W TEJ SAMEJ LINII ŁAŃCUCHOWEJ) ---
+  if (X > 0) {
+    addLinearDim(dimsLayer, {
+      dot1: { x: swiatloStartX, y: originY + D },
+      dot2: { x: rightSideInnerX, y: originY + D },
+      ext1: { x1: swiatloStartX, y1: originY + D, x2: swiatloStartX, y2: dimChainY + 16 },
+      ext2: { x1: rightSideInnerX, y1: originY + D, x2: rightSideInnerX, y2: dimChainY + 16 },
+      dim: { x1: swiatloStartX, y1: dimChainY, x2: rightSideInnerX, y2: dimChainY },
+      arrow1Dir: { x: -1, y: 0 },
+      arrow2Dir: { x: 1, y: 0 }
+    });
+    addWhiteBadge(dimsLayer, midXX, badgeSwiatloY, Math.round(X), 50);
+  }
+
+  // --- CZĘŚĆ 3: NAŁOŻENIE FRONTU NA BOCZEK (LINIA WYDŁUŻONA W PRAWO WG SZTUKI RYSUNKU — 16 mm) ---
+  const sideOverlap = Math.round(frontEndX - rightSideInnerX);
+  if (sideOverlap > 0) {
+    const sideOverlapG = document.createElementNS(SVG_NS, 'g');
+    sideOverlapG.setAttribute('class', 'dim-line-guide');
+    sideOverlapG.setAttribute('pointer-events', 'none');
+
+    // Linia pomocnicza prawa (koniec frontu)
+    const extR = document.createElementNS(SVG_NS, 'line');
+    extR.setAttribute('x1', frontEndX);
+    extR.setAttribute('y1', frontY + T);
+    extR.setAttribute('x2', frontEndX);
+    extR.setAttribute('y2', dimChainY + 16);
+    extR.setAttribute('stroke', '#059669');
+    extR.setAttribute('stroke-width', '1.5');
+    extR.setAttribute('stroke-dasharray', '4,3');
+    sideOverlapG.appendChild(extR);
+
+    // Kropka bazowa prawa
+    const dotR = document.createElementNS(SVG_NS, 'circle');
+    dotR.setAttribute('cx', frontEndX); dotR.setAttribute('cy', frontY + T);
+    dotR.setAttribute('r', '3'); dotR.setAttribute('fill', '#059669');
+    sideOverlapG.appendChild(dotR);
+
+    // Linia wymiarowa nałożenia: przedłużona w prawo (półka na liczbę wymiaru 16), łączy się w łańcuch ze światłem
+    const sideOverlapLine = document.createElementNS(SVG_NS, 'line');
+    sideOverlapLine.setAttribute('x1', rightSideInnerX);
+    sideOverlapLine.setAttribute('y1', dimChainY);
+    sideOverlapLine.setAttribute('x2', frontEndX + 55);
+    sideOverlapLine.setAttribute('y2', dimChainY);
+    sideOverlapLine.setAttribute('stroke', '#10b981');
+    sideOverlapLine.setAttribute('stroke-width', '2.5');
+    sideOverlapG.appendChild(sideOverlapLine);
+
+    // Grot prawy (przy krawędzi frontEndX, skierowany w lewo w stronę wymiaru nałożenia)
+    const aR = document.createElementNS(SVG_NS, 'path');
+    const lenA = 12, wA = 3.8;
+    aR.setAttribute('d', `M ${frontEndX} ${dimChainY} L ${frontEndX + lenA} ${dimChainY - wA} L ${frontEndX + lenA} ${dimChainY + wA} Z`);
+    aR.setAttribute('fill', '#10b981');
+    sideOverlapG.appendChild(aR);
+
+    // Tekst wymiaru umieszczony na wydłużonej linii po prawej stronie (zgodnie z PN/ISO)
+    const sideOverlapTxt = document.createElementNS(SVG_NS, 'text');
+    sideOverlapTxt.setAttribute('x', frontEndX + 28);
+    sideOverlapTxt.setAttribute('y', dimChainY - 6);
+    sideOverlapTxt.setAttribute('text-anchor', 'middle');
+    sideOverlapTxt.setAttribute('font-size', '17');
+    sideOverlapTxt.setAttribute('font-weight', '800');
+    sideOverlapTxt.setAttribute('font-family', 'sans-serif');
+    sideOverlapTxt.setAttribute('fill', '#047857');
+    sideOverlapTxt.textContent = sideOverlap;
+    sideOverlapG.appendChild(sideOverlapTxt);
+
+    dimsLayer.appendChild(sideOverlapG);
+  }
+
+  // 4. FRONT NAKŁADANY (ZIELONE KÓŁKO EDYTOWALNE NA DOLE, POZIOM 2)
+  const dimFY_Line = badgeSwiatloY + 115;
+  const badgeFY = dimFY_Line + 68;
+  const midFX = frontStartX + F / 2;
+  addLinearDim(dimsLayer, {
+    dot1: { x: frontStartX, y: frontY + T },
+    dot2: { x: frontEndX, y: frontY + T },
+    ext1: { x1: frontStartX, y1: frontY + T, x2: frontStartX, y2: dimFY_Line + 16 },
+    ext2: { x1: frontEndX, y1: frontY + T, x2: frontEndX, y2: dimFY_Line + 16 },
+    dim: { x1: frontStartX, y1: dimFY_Line, x2: frontEndX, y2: dimFY_Line },
+    arrow1Dir: { x: -1, y: 0 },
+    arrow2Dir: { x: 1, y: 0 }
+  });
+  addGreenBadge(dimsLayer, midFX, badgeFY, F, 'F');
+
+  // === DYNAMICZNY VIEWBOX WYŚRODKOWANY NA RYSUNKU ===
+  const minX = Math.min(originX, frontStartX - 70) - 20;
+  const maxX = Math.max(rightCabinetX, frontEndX + 70) + 20;
+  const minY = badgeKY - 70;
+  const maxY = badgeFY + 110;
+
+  const padX = 50;
+  const padY = 40;
+  const vbX = minX - padX;
+  const vbY = minY - padY;
+  const vbW = (maxX - minX) + padX * 2;
+  const vbH = (maxY - minY) + padY * 2;
+
+  svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+  syncAllDimHitRects();
+  setTimeout(syncAllDimHitRects, 0);
+}
+
+// Obsługa przycisków w oknie edycji
+document.getElementById('dimEditorOk').addEventListener('click', commitDimEditor);
+document.getElementById('dimEditorCancel').addEventListener('click', closeDimEditor);
+document.getElementById('dimEditorSelect').addEventListener('change', commitDimEditor);
+document.getElementById('dimEditorInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') commitDimEditor();
+  if (e.key === 'Escape') closeDimEditor();
+});
+
+// Zamykanie edytora przy kliknięciu poza nim
+document.getElementById('svgContainer').addEventListener('click', function(e) {
+  if (!isDimUiTarget(e.target)) closeDimEditor();
+});
+
+// Start
+setType('drzwi');
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
