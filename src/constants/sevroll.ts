@@ -1,7 +1,7 @@
 import { SevrollOffsets, CabinetGroup } from '../types';
 
 export const DEFAULT_SEVROLL_OFFSETS: SevrollOffsets = {
-  boardThickness: 16, // W oryginalnym kodzie mark1364 BOARD_OFFSET = 32 (czyli 2 x 16mm)
+  boardThickness: 18, // Grubość płyty korpusu (BOARD_OFFSET = 36, czyli 2 x 18mm)
   dnoWidth: 21,       // Szerokość dna = Wew - 21 mm
   dnoDepth: 20,       // Głębokość dna = Długość prowadnicy - 20 mm
   tylWidth: 42,       // Szerokość tyłu = Wew - 42 mm

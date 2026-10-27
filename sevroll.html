@@ -547,7 +547,7 @@
 
 <script>
 const NESTING_STORAGE_KEY = 'stolarnia_nesting_parts';
-const BOARD_OFFSET = 32;
+const BOARD_OFFSET = 36;
 const OFFSETS = { dnoWidth: 21, dnoDepth: 20, tylWidth: 42, panel: 100, rail: 87 };
 const HEIGHT_NO_INTERNAL = 60;
 const HEIGHT_PANEL_ONLY = 101;
@@ -657,7 +657,9 @@ function createDrawerRow(groupId, isFirst, data, rowspan) {
         <td class="sec-sevroll cabinet-cell-ext" rowspan="${rowspan}">
             <input type="number" class="inp-ext" value="${ext}" min="100" step="1">
         </td>
-        <td class="sec-sevroll cabinet-cell-int cell-calc muted out-int" rowspan="${rowspan}">—</td>`;
+        <td class="sec-sevroll cabinet-cell-int" rowspan="${rowspan}">
+            <input type="number" class="inp-int" value="${ext - BOARD_OFFSET}" min="50" step="1" placeholder="Wew">
+        </td>`;
     }
 
     html += drawerRowHtml(d);
@@ -678,11 +680,48 @@ function createDrawerRow(groupId, isFirst, data, rowspan) {
         tr.querySelector('.inp-name').addEventListener('input', () => updateSummary());
         tr.querySelector('.inp-szafek').addEventListener('change', () => updateSummary());
         const inpExt = tr.querySelector('.inp-ext');
+        const inpInt = tr.querySelector('.inp-int');
+        
+        // Flaga blokująca rekurencję przy automatycznym przeliczaniu
+        let isUpdating = false;
+        
         const updateAllGroup = () => {
+            if (isUpdating) return;
             getGroupRows(groupId).forEach(updateRow);
         };
-        inpExt.addEventListener('input', updateAllGroup);
-        inpExt.addEventListener('change', updateAllGroup);
+        
+        // Kiedy zmienia się szerokość zewnętrzna - przelicz wewnętrzną
+        inpExt.addEventListener('input', () => {
+            isUpdating = true;
+            const ext = parseFloat(inpExt.value) || 0;
+            inpInt.value = ext > 0 ? ext - BOARD_OFFSET : '';
+            isUpdating = false;
+            updateAllGroup();
+        });
+        inpExt.addEventListener('change', () => {
+            isUpdating = true;
+            const ext = parseFloat(inpExt.value) || 0;
+            inpInt.value = ext > 0 ? ext - BOARD_OFFSET : '';
+            isUpdating = false;
+            updateAllGroup();
+        });
+        
+        // Kiedy zmienia się szerokość wewnętrzna - przelicz zewnętrzną
+        inpInt.addEventListener('input', () => {
+            isUpdating = true;
+            const intVal = parseFloat(inpInt.value) || 0;
+            inpExt.value = intVal > 0 ? intVal + BOARD_OFFSET : '';
+            isUpdating = false;
+            updateAllGroup();
+        });
+        inpInt.addEventListener('change', () => {
+            isUpdating = true;
+            const intVal = parseFloat(inpInt.value) || 0;
+            inpExt.value = intVal > 0 ? intVal + BOARD_OFFSET : '';
+            isUpdating = false;
+            updateAllGroup();
+        });
+        
         tr.querySelector('.inp-szuflad').addEventListener('change', (e) => {
             setGroupQty(groupId, parseInt(e.target.value, 10));
         });
@@ -1000,17 +1039,6 @@ function updateRow(tr) {
     const internal = internalSel.value;
     const r = calcRow(ext, runner, height, internal);
 
-    const elInt = first.querySelector('.out-int');
-    if (elInt) {
-        if (!r || r.intW <= 0) {
-            elInt.textContent = '—';
-            elInt.classList.add('empty');
-        } else {
-            elInt.textContent = r.intW;
-            elInt.classList.remove('empty');
-        }
-    }
-
     const elDno = tr.querySelector('.out-dno');
     const elTyl = tr.querySelector('.out-tyl');
     const elPanel = tr.querySelector('.out-panel');
@@ -1028,9 +1056,6 @@ function updateRow(tr) {
         updateSummary();
         return;
     }
-
-    elInt.textContent = r.intW;
-    elInt.classList.remove('empty');
 
     elDno.textContent = r.dno;
     elDno.classList.toggle('empty', r.dno === '—');
