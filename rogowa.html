@@ -201,6 +201,11 @@
         max-height: 60vh;
         border-radius: 6px;
       }
+      /* Increase SVG display size by 20% on mobile */
+      .svg-container {
+        transform: scale(1.2);
+        transform-origin: top center;
+      }
       .dim-editor {
         min-width: 140px;
         padding: 8px 10px;
@@ -213,6 +218,24 @@
         height: 34px;
         font-size: 16px;
         padding: 4px 6px;
+      }
+      .dim-editable text {
+        font-size: 50px !important;
+      }
+      .dim-hit, .dim-hit-static {
+        stroke-width: 3 !important;
+      }
+      .dim-line-guide line {
+        stroke-width: 1.5 !important;
+      }
+      .dim-line-guide circle {
+        r: 4 !important;
+      }
+      .dim-badge-num {
+        font-size: 38px !important;
+      }
+      .dim-badge-label {
+        font-size: 22px !important;
       }
     }
   </style>
