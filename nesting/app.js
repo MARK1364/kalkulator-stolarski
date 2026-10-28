@@ -14,7 +14,17 @@ const statusMsg = document.getElementById('statusMsg');
 const boardsContainer = document.getElementById('boardsContainer');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 
-// Navigation helper - get all input elements in table (w, h, qty only)
+// Get all inputs (for vertical navigation - name, w, h, qty, rot)
+function getAllInputs() {
+    const inputs = [];
+    partsListEl.querySelectorAll('input, select').forEach(el => {
+        const td = el.closest('td');
+        if (td) inputs.push({ element: el, colIndex: td.cellIndex });
+    });
+    return inputs;
+}
+
+// Get w/h/qty inputs only (for Enter navigation)
 function getPartInputs() {
     const inputs = { w: [], h: [], qty: [] };
     const inputsList = partsListEl.querySelectorAll('input');
@@ -31,23 +41,34 @@ function getPartInputs() {
     return inputs;
 }
 
-function getRowInputs(input) {
-    const inputs = getPartInputs();
-    let rowIdx = -1;
-    
-    if (inputs.w.includes(input)) rowIdx = inputs.w.indexOf(input);
-    else if (inputs.h.includes(input)) rowIdx = inputs.h.indexOf(input);
-    else if (inputs.qty.includes(input)) rowIdx = inputs.qty.indexOf(input);
-    
-    if (rowIdx < 0) return null;
-    
-    return {
-        w: inputs.w[rowIdx] || null,
-        h: inputs.h[rowIdx] || null,
-        qty: inputs.qty[rowIdx] || null
-    };
+function getRowIndexFromCol(inputs, input, colIndex) {
+    const list = inputs[colIndex];
+    if (!list) return -1;
+    return list.indexOf(input);
 }
 
+// Vertical navigation - moves up/down in same column for ALL input types
+function focusVertical(input, direction) {
+    const allInputs = getAllInputs();
+    const current = allInputs.find(i => i.element === input);
+    if (!current) return;
+    
+    // Find all inputs in same column
+    const sameCol = allInputs.filter(i => i.colIndex === current.colIndex);
+    const idx = sameCol.findIndex(i => i.element === input);
+    if (idx === -1) return;
+    
+    let nextIdx = idx + direction;
+    if (nextIdx < 0) nextIdx = sameCol.length - 1;
+    if (nextIdx >= sameCol.length) nextIdx = 0;
+    
+    sameCol[nextIdx].element.focus();
+    if (sameCol[nextIdx].element.type === 'number' || sameCol[nextIdx].element.type === 'text') {
+        sameCol[nextIdx].element.select();
+    }
+}
+
+// Horizontal navigation (Enter) - w -> h -> qty -> new row
 function focusNextField(input) {
     const inputs = getPartInputs();
     let currentList = null;
@@ -56,7 +77,20 @@ function focusNextField(input) {
     else if (inputs.h.includes(input)) currentList = inputs.h;
     else if (inputs.qty.includes(input)) currentList = inputs.qty;
     
-    if (!currentList) return;
+    if (!currentList) {
+        // If on name field, move to w
+        const allInputs = getAllInputs();
+        const nameInput = allInputs.find(i => i.colIndex === 0 && i.element === input);
+        if (nameInput) {
+            const rowInputs = getPartInputs();
+            const idx = getRowIndexFromCol(rowInputs, input, 0);
+            if (idx >= 0 && rowInputs.w[idx]) {
+                rowInputs.w[idx].focus();
+                rowInputs.w[idx].select();
+            }
+        }
+        return;
+    }
     
     const idx = currentList.indexOf(input);
     if (idx === -1) return;
@@ -82,45 +116,21 @@ function focusNextField(input) {
     }
 }
 
-// Focus next input in same column (vertical navigation)
-function focusVertical(input, direction) {
-    const inputs = getPartInputs();
-    let currentList = null;
-    
-    if (inputs.w.includes(input)) currentList = inputs.w;
-    else if (inputs.h.includes(input)) currentList = inputs.h;
-    else if (inputs.qty.includes(input)) currentList = inputs.qty;
-    
-    if (!currentList) return;
-    
-    const idx = currentList.indexOf(input);
-    if (idx === -1) return;
-    
-    let nextIdx = idx + direction;
-    if (nextIdx < 0) nextIdx = currentList.length - 1;
-    if (nextIdx >= currentList.length) nextIdx = 0;
-    
-    currentList[nextIdx].focus();
-    currentList[nextIdx].select();
-}
-
 function setupKeyboardNavigation() {
     partsListEl.addEventListener('keydown', (e) => {
         const target = e.target;
-        if (!target.matches('input')) return;
+        if (!target.matches('input, select')) return;
         
-        const inputs = getPartInputs();
-        if (!inputs.w.includes(target) && !inputs.h.includes(target) && !inputs.qty.includes(target)) {
-            return;
-        }
-        
+        // ArrowDown/ArrowUp: vertical navigation on ALL columns
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             focusVertical(target, 1);
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             focusVertical(target, -1);
-        } else if (e.key === 'Enter') {
+        }
+        // Enter: horizontal navigation (w -> h -> qty -> new row)
+        else if (e.key === 'Enter') {
             e.preventDefault();
             focusNextField(target);
         }
@@ -211,7 +221,6 @@ window.removePart = function(index) {
 function addPart() {
     parts.push({ id: Date.now().toString(), name: 'Nowa formatka', w: 0, h: 0, qty: 0, rot: 'any' });
     renderPartsList();
-    // Re-setup keyboard navigation after new row added
     setupKeyboardNavigation();
 }
 
