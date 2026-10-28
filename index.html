@@ -210,6 +210,7 @@
         <button class="sub-tab" data-calc="merivo">Merivo</button>
         <button class="sub-tab" data-calc="rogowa">Rogowa</button>
         <button class="sub-tab" data-calc="rogowa-prosta">Rogowa prosta</button>
+        <button class="sub-tab" data-calc="aventos">Aventos</button>
     </div>
 </header>
 
@@ -225,6 +226,7 @@
             <iframe id="frame-merivo" src="merivo.html" title="Blum Merivobox — dno i tył"></iframe>
             <iframe id="frame-rogowa" src="rogowa.html" title="Szafka rogowa"></iframe>
             <iframe id="frame-rogowa-prosta" src="rogowa-prosta.html" title="Szafka narożna prosta"></iframe>
+            <iframe id="frame-aventos" src="aventos.html" title="Blum Aventos — siłowniki"></iframe>
         </div>
     </section>
     <section class="panel" id="panel-render">
@@ -280,7 +282,7 @@
         const [main, sub] = hash.split('/');
         const valid = ['kalkulator', 'render', 'harmonogram'];
         switchMain(valid.includes(main) ? main : 'kalkulator');
-        if (main === 'kalkulator' && ['giecie', 'lamele', 'polki', 'nesting', 'antaro', 'sevroll', 'merivo', 'rogowa', 'rogowa-prosta'].includes(sub)) {
+        if (main === 'kalkulator' && ['giecie', 'lamele', 'polki', 'nesting', 'antaro', 'sevroll', 'merivo', 'rogowa', 'rogowa-prosta', 'aventos'].includes(sub)) {
             switchCalc(sub);
         }
     }

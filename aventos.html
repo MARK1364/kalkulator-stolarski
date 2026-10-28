@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Aventos - Kalkulator Siłowników</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #E8E4DD;
+            color: #3D3A36;
+            font-size: 17px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        .toolbar {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 32px;
+            background: #7A6B8F;
+            border-bottom: 2px solid #5C4F72;
+        }
+        .toolbar h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toolbar h1 span { color: #ea580c; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+            overflow: hidden;
+            padding: 20px;
+            gap: 20px;
+            flex-direction: column;
+        }
+
+        @media (min-width: 900px) {
+            .main-content {
+                flex-direction: row;
+            }
+        }
+
+        .panel-left {
+            flex: 1;
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(61, 58, 54, 0.1);
+            min-width: 320px;
+        }
+
+        .panel-left h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5C4F72;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #E8E4DD;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #5C4F72;
+            margin-bottom: 6px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 16px;
+            border: 2px solid #C9C4BB;
+            border-radius: 8px;
+            background: #fff;
+            color: #3D3A36;
+            font-family: inherit;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #7A6B8F;
+            box-shadow: 0 0 0 3px rgba(122, 107, 143, 0.15);
+        }
+
+        .unit {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+            color: #9A9590;
+            pointer-events: none;
+        }
+
+        .results-panel {
+            flex: 1;
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(61, 58, 54, 0.1);
+        }
+
+        .results-banner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-box {
+            background: #EFE9F2;
+            border: 2px solid #D0C6DE;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .metric-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #5C4F72;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #7A6B8F;
+        }
+
+        .metric-unit {
+            font-size: 14px;
+            font-weight: 500;
+            color: #5C4F72;
+        }
+
+        .family-group {
+            margin-bottom: 18px;
+        }
+
+        .family-header {
+            font-size: 15px;
+            font-weight: 700;
+            color: #7A6B8F;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #E8E4DD;
+        }
+
+        .models-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .model-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 2px solid #D5D0C8;
+            font-size: 15px;
+            background: #FAF7F0;
+            transition: all 0.2s ease;
+        }
+
+        .model-row.matched {
+            background: #ECFDF5;
+            border-color: #10B981;
+            color: #047857;
+            font-weight: 600;
+        }
+
+        .model-code {
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            color: #5C4F72;
+        }
+
+        .model-badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: #D5D0C8;
+            color: #6E6962;
+            font-weight: 700;
+        }
+
+        .model-row.matched .model-badge {
+            background: #10B981;
+            color: white;
+        }
+
+        .formula-note {
+            font-size: 13px;
+            color: #6E6962;
+            line-height: 1.5;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 2px dashed #C9C4BB;
+        }
+
+        @media (max-width: 768px) {
+            .toolbar { padding: 12px 16px; }
+            .toolbar h1 { font-size: 18px; }
+            .main-content { padding: 12px; gap: 14px; }
+            .panel-left, .results-panel { padding: 16px; }
+            .panel-left h2 { font-size: 16px; }
+            .results-banner { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <h1><span>blum</span> Aventos</h1>
+</div>
+
+<div class="main-content">
+    <!-- PANEL WEJŚCIOWY -->
+    <div class="panel-left">
+        <h2>Wymiary i Front</h2>
+
+        <div class="form-group">
+            <label for="fh">Wysokość frontu / korpusu (FH)</label>
+            <div class="input-wrapper">
+                <input type="number" id="fh" value="600" min="100" max="2400" step="1">
+                <span class="unit">mm</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="fb">Szerokość frontu (FB)</label>
+            <div class="input-wrapper">
+                <input type="number" id="fb" value="606" min="100" max="2400" step="1">
+                <span class="unit">mm</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="fd">Grubość frontu (FD)</label>
+            <div class="input-wrapper">
+                <input type="number" id="fd" value="19" min="8" max="40" step="0.5">
+                <span class="unit">mm</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="material">Materiał frontu</label>
+            <select id="material">
+                <option value="780" selected>MDF (780 kg/m³)</option>
+                <option value="680">Płyta wiórowa (680 kg/m³)</option>
+                <option value="720">Drewno lite (np. Dąb 720 kg/m³)</option>
+                <option value="custom">Inna gęstość własna</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="customDensityGroup" style="display: none;">
+            <label for="customDensity">Własna gęstość</label>
+            <div class="input-wrapper">
+                <input type="number" id="customDensity" value="780" min="100" max="2500" step="10">
+                <span class="unit">kg/m³</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="handle">Waga uchwytu (opcjonalnie)</label>
+            <div class="input-wrapper">
+                <input type="number" id="handle" value="0.00" min="0" max="5" step="0.05">
+                <span class="unit">kg</span>
+            </div>
+        </div>
+
+        <div class="formula-note">
+            <strong>Wzory:</strong><br>
+            • FG (kg) = FH(m) × FB(m) × FD(m) × Gęstość<br>
+            • LF = FH × (FG + 2 × waga uchwytu)
+        </div>
+    </div>
+
+    <!-- PANEL WYNIKÓW -->
+    <div class="results-panel">
+        <div class="results-banner">
+            <div class="metric-box">
+                <div class="metric-title">Waga frontu (FG)</div>
+                <div class="metric-value"><span id="fgVal">5.39</span> <span class="metric-unit">kg</span></div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-title">Współczynnik mocy (LF)</div>
+                <div class="metric-value" id="lfVal">3233</div>
+            </div>
+        </div>
+
+        <h2>Dobór siłowników</h2>
+
+        <!-- HK-S -->
+        <div class="family-group">
+            <div class="family-header">Aventos HK-S (Uchylny mały)</div>
+            <div class="models-list" id="list-hks"></div>
+        </div>
+
+        <!-- HK TOP -->
+        <div class="family-group">
+            <div class="family-header">Aventos HK TOP (Uchylny)</div>
+            <div class="models-list" id="list-hktop"></div>
+        </div>
+
+        <!-- HK-XS -->
+        <div class="family-group">
+            <div class="family-header">Aventos HK-XS (Kompaktowy)</div>
+            <div class="models-list" id="list-hkxs"></div>
+        </div>
+
+        <!-- HF -->
+        <div class="family-group">
+            <div class="family-header">Aventos HF (Fronty składane)</div>
+            <div class="models-list" id="list-hf"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Baza modeli i zakresów LF (dokładnie z arkusza Blum)
+    const databases = {
+        hks: [
+            { code: "20K2B00.02", min: 220, max: 500 },
+            { code: "20K2C00.02", min: 400, max: 1000 },
+            { code: "20K2E00.02", min: 960, max: 2215 }
+        ],
+        hktop: [
+            { code: "22K2300", min: 420, max: 1610 },
+            { code: "22K2500", min: 930, max: 2800 },
+            { code: "22K2700", min: 1730, max: 5200 },
+            { code: "22K2900", min: 3200, max: 9000 }
+        ],
+        hkxs: [
+            { code: "20K1101", min: 200, max: 1000 },
+            { code: "20K1301", min: 500, max: 1500 },
+            { code: "20K1501", min: 800, max: 1800 }
+        ],
+        hf: [
+            { code: "20F2200.05", min: 2600, max: 5500 },
+            { code: "20F2500.05", min: 5350, max: 10150 },
+            { code: "20F2800.05", min: 9000, max: 18000 }
+        ]
+    };
+
+    const fhInput = document.getElementById('fh');
+    const fbInput = document.getElementById('fb');
+    const fdInput = document.getElementById('fd');
+    const matSelect = document.getElementById('material');
+    const customDensityGroup = document.getElementById('customDensityGroup');
+    const customDensityInput = document.getElementById('customDensity');
+    const handleInput = document.getElementById('handle');
+
+    const fgVal = document.getElementById('fgVal');
+    const lfVal = document.getElementById('lfVal');
+
+    matSelect.addEventListener('change', () => {
+        if (matSelect.value === 'custom') {
+            customDensityGroup.style.display = 'block';
+        } else {
+            customDensityGroup.style.display = 'none';
+        }
+        calculate();
+    });
+
+    [fhInput, fbInput, fdInput, customDensityInput, handleInput].forEach(inp => {
+        inp.addEventListener('input', calculate);
+    });
+
+    function renderGroup(containerId, models, currentLF) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        models.forEach(m => {
+            const isMatch = currentLF >= m.min && currentLF <= m.max;
+            const row = document.createElement('div');
+            row.className = `model-row ${isMatch ? 'matched' : ''}`;
+
+            row.innerHTML = `
+                <div>
+                    <span class="model-code">${m.code}</span>
+                    <span style="color: ${isMatch ? '#047857' : '#6E6962'}; margin-left: 8px; font-size: 14px;">
+                        (LF: ${m.min} – ${m.max})
+                    </span>
+                </div>
+                <div class="model-badge">${isMatch ? 'PASUJE' : `${m.min} - ${m.max}`}</div>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function calculate() {
+        const fh = parseFloat(fhInput.value) || 0; // mm
+        const fb = parseFloat(fbInput.value) || 0; // mm
+        const fd = parseFloat(fdInput.value) || 0; // mm
+        const handle = parseFloat(handleInput.value) || 0; // kg
+
+        let density = parseFloat(matSelect.value);
+        if (matSelect.value === 'custom') {
+            density = parseFloat(customDensityInput.value) || 0;
+        }
+
+        // Waga frontu: (FH/1000) * (FB/1000) * (FD/1000) * density
+        const fg = (fh * fb * fd * density) / 1000000000;
+
+        // Współczynnik LF = FH * (FG + 2 * waga uchwytu)
+        const lf = Math.round(fh * (fg + 2 * handle));
+
+        fgVal.textContent = fg.toFixed(2);
+        lfVal.textContent = isNaN(lf) ? 0 : lf;
+
+        renderGroup('list-hks', databases.hks, lf);
+        renderGroup('list-hktop', databases.hktop, lf);
+        renderGroup('list-hkxs', databases.hkxs, lf);
+        renderGroup('list-hf', databases.hf, lf);
+    }
+
+    // Pierwsze przeliczenie przy starcie
+    calculate();
+</script>
+
+</body>
+</html>
