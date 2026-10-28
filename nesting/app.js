@@ -14,27 +14,74 @@ const statusMsg = document.getElementById('statusMsg');
 const boardsContainer = document.getElementById('boardsContainer');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 
-// Navigation helper - get all input/select elements in table
-function getNavigableElements() {
-    const inputs = [];
-    partsListEl.querySelectorAll('input, select').forEach(el => inputs.push(el));
+// Navigation helper - get all input elements in table (separated by column: name, w, h, qty, rot)
+function getInputElements() {
+    const inputs = { name: [], w: [], h: [], qty: [], rot: [] };
+    const inputsList = partsListEl.querySelectorAll('input');
+    const selects = partsListEl.querySelectorAll('select');
+    
+    inputsList.forEach((el, idx) => {
+        const td = el.closest('td');
+        if (!td) return;
+        const colIndex = td.cellIndex;
+        if (colIndex === 0) inputs.name.push(el);
+        else if (colIndex === 1) inputs.w.push(el);
+        else if (colIndex === 2) inputs.h.push(el);
+        else if (colIndex === 3) inputs.qty.push(el);
+    });
+    
+    selects.forEach(el => {
+        const td = el.closest('td');
+        if (td && td.cellIndex === 4) inputs.rot.push(el);
+    });
+    
     return inputs;
 }
 
-function focusNextInput(currentInput, direction = 1) {
-    const inputs = getNavigableElements();
-    const currentIndex = inputs.indexOf(currentInput);
+// Focus next input in same column (vertical navigation)
+function focusVertical(currentInput, direction) {
+    const inputs = getInputElements();
+    let sourceList = null;
+
+    if (inputs.name.includes(currentInput)) sourceList = inputs.name;
+    else if (inputs.w.includes(currentInput)) sourceList = inputs.w;
+    else if (inputs.h.includes(currentInput)) sourceList = inputs.h;
+    else if (inputs.qty.includes(currentInput)) sourceList = inputs.qty;
+    else if (inputs.rot.includes(currentInput)) sourceList = inputs.rot;
+
+    if (!sourceList) return;
+
+    const currentIndex = sourceList.indexOf(currentInput);
     if (currentIndex === -1) return;
 
     let nextIndex = currentIndex + direction;
-    if (nextIndex < 0) nextIndex = inputs.length - 1;
-    if (nextIndex >= inputs.length) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = sourceList.length - 1;
+    if (nextIndex >= sourceList.length) nextIndex = 0;
 
-    inputs[nextIndex].focus();
-    // Select text in number inputs for easy editing
-    if (inputs[nextIndex].type === 'number' || inputs[nextIndex].type === 'text') {
-        inputs[nextIndex].select();
+    sourceList[nextIndex].focus();
+    sourceList[nextIndex].select();
+}
+
+// Focus next input in sequence: w -> h -> qty (horizontal navigation)
+function focusHorizontal(currentInput) {
+    const inputs = getInputElements();
+    let nextInput = null;
+
+    if (inputs.w.includes(currentInput)) nextInput = getRowInput(inputs.h, currentInput);
+    else if (inputs.h.includes(currentInput)) nextInput = getRowInput(inputs.qty, currentInput);
+    else if (inputs.qty.includes(currentInput)) nextInput = getRowInput(inputs.w, currentInput);
+
+    if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
     }
+}
+
+function getRowInput(list, currentInput) {
+    const currentIndex = list.indexOf(currentInput);
+    if (currentIndex >= 0 && currentIndex < list.length) return list[currentIndex];
+    if (list.length > 0) return list[0];
+    return null;
 }
 
 function setupKeyboardNavigation() {
@@ -42,12 +89,20 @@ function setupKeyboardNavigation() {
         const target = e.target;
         if (!target.matches('input, select')) return;
 
-        if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        // ArrowDown: move to next row in same column
+        if (e.key === 'ArrowDown') {
             e.preventDefault();
-            focusNextInput(target, 1);
-        } else if (e.key === 'ArrowUp') {
+            focusVertical(target, 1);
+        }
+        // ArrowUp: move to previous row in same column
+        else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            focusNextInput(target, -1);
+            focusVertical(target, -1);
+        }
+        // Enter: move to next field in sequence (w -> h -> qty -> w)
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            focusHorizontal(target);
         }
     });
 }
@@ -104,12 +159,12 @@ function renderPartsList() {
     parts.forEach((part, index) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><input type="text" value="${part.name}" onchange="updatePart(${index}, 'name', this.value)"></td>
-            <td><input type="number" value="${part.w}" title="Szerokość" onchange="updatePart(${index}, 'w', this.value)"></td>
-            <td><input type="number" value="${part.h}" title="Wysokość" onchange="updatePart(${index}, 'h', this.value)"></td>
-            <td><input type="number" value="${part.qty}" title="Ilość" onchange="updatePart(${index}, 'qty', this.value)"></td>
+            <td><input type="text" value="${part.name}" onclick="this.select()" onchange="updatePart(${index}, 'name', this.value)"></td>
+            <td><input type="number" value="${part.w}" title="Szerokość" onclick="this.select()" onchange="updatePart(${index}, 'w', this.value)"></td>
+            <td><input type="number" value="${part.h}" title="Wysokość" onclick="this.select()" onchange="updatePart(${index}, 'h', this.value)"></td>
+            <td><input type="number" value="${part.qty}" title="Ilość" onclick="this.select()" onchange="updatePart(${index}, 'qty', this.value)"></td>
             <td>
-                <select onchange="updatePart(${index}, 'rot', this.value)" title="Dowolny kierunek pozwala obracać część o 90st">
+                <select onclick="this.focus()" onchange="updatePart(${index}, 'rot', this.value)" title="Dowolny kierunek pozwala obracać część o 90st">
                     <option value="any" ${part.rot === 'any' ? 'selected' : ''}>⟳ Dowolny</option>
                     <option value="none" ${part.rot === 'none' ? 'selected' : ''}>⛔ Zablokuj</option>
                 </select>
