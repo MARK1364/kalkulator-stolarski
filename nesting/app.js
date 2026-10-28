@@ -14,95 +14,115 @@ const statusMsg = document.getElementById('statusMsg');
 const boardsContainer = document.getElementById('boardsContainer');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 
-// Navigation helper - get all input elements in table (separated by column: name, w, h, qty, rot)
-function getInputElements() {
-    const inputs = { name: [], w: [], h: [], qty: [], rot: [] };
+// Navigation helper - get all input elements in table (w, h, qty only)
+function getPartInputs() {
+    const inputs = { w: [], h: [], qty: [] };
     const inputsList = partsListEl.querySelectorAll('input');
-    const selects = partsListEl.querySelectorAll('select');
     
     inputsList.forEach((el, idx) => {
         const td = el.closest('td');
         if (!td) return;
         const colIndex = td.cellIndex;
-        if (colIndex === 0) inputs.name.push(el);
-        else if (colIndex === 1) inputs.w.push(el);
+        if (colIndex === 1) inputs.w.push(el);
         else if (colIndex === 2) inputs.h.push(el);
         else if (colIndex === 3) inputs.qty.push(el);
-    });
-    
-    selects.forEach(el => {
-        const td = el.closest('td');
-        if (td && td.cellIndex === 4) inputs.rot.push(el);
     });
     
     return inputs;
 }
 
-// Focus next input in same column (vertical navigation)
-function focusVertical(currentInput, direction) {
-    const inputs = getInputElements();
-    let sourceList = null;
-
-    if (inputs.name.includes(currentInput)) sourceList = inputs.name;
-    else if (inputs.w.includes(currentInput)) sourceList = inputs.w;
-    else if (inputs.h.includes(currentInput)) sourceList = inputs.h;
-    else if (inputs.qty.includes(currentInput)) sourceList = inputs.qty;
-    else if (inputs.rot.includes(currentInput)) sourceList = inputs.rot;
-
-    if (!sourceList) return;
-
-    const currentIndex = sourceList.indexOf(currentInput);
-    if (currentIndex === -1) return;
-
-    let nextIndex = currentIndex + direction;
-    if (nextIndex < 0) nextIndex = sourceList.length - 1;
-    if (nextIndex >= sourceList.length) nextIndex = 0;
-
-    sourceList[nextIndex].focus();
-    sourceList[nextIndex].select();
+function getRowInputs(input) {
+    const inputs = getPartInputs();
+    let rowIdx = -1;
+    
+    if (inputs.w.includes(input)) rowIdx = inputs.w.indexOf(input);
+    else if (inputs.h.includes(input)) rowIdx = inputs.h.indexOf(input);
+    else if (inputs.qty.includes(input)) rowIdx = inputs.qty.indexOf(input);
+    
+    if (rowIdx < 0) return null;
+    
+    return {
+        w: inputs.w[rowIdx] || null,
+        h: inputs.h[rowIdx] || null,
+        qty: inputs.qty[rowIdx] || null
+    };
 }
 
-// Focus next input in sequence: w -> h -> qty (horizontal navigation)
-function focusHorizontal(currentInput) {
-    const inputs = getInputElements();
+function focusNextField(input) {
+    const inputs = getPartInputs();
+    let currentList = null;
+    
+    if (inputs.w.includes(input)) currentList = inputs.w;
+    else if (inputs.h.includes(input)) currentList = inputs.h;
+    else if (inputs.qty.includes(input)) currentList = inputs.qty;
+    
+    if (!currentList) return;
+    
+    const idx = currentList.indexOf(input);
+    if (idx === -1) return;
+    
+    // If qty field and last row -> add new part
+    if (currentList === inputs.qty && idx === inputs.qty.length - 1) {
+        addPart();
+        const newInputs = getPartInputs();
+        newInputs.w[newInputs.w.length - 1].focus();
+        newInputs.w[newInputs.w.length - 1].select();
+        return;
+    }
+    
+    // Next field in sequence: w -> h -> qty
     let nextInput = null;
-
-    if (inputs.w.includes(currentInput)) nextInput = getRowInput(inputs.h, currentInput);
-    else if (inputs.h.includes(currentInput)) nextInput = getRowInput(inputs.qty, currentInput);
-    else if (inputs.qty.includes(currentInput)) nextInput = getRowInput(inputs.w, currentInput);
-
+    if (currentList === inputs.w) nextInput = inputs.h[idx];
+    else if (currentList === inputs.h) nextInput = inputs.qty[idx];
+    else if (currentList === inputs.qty) nextInput = inputs.w[idx];
+    
     if (nextInput) {
         nextInput.focus();
         nextInput.select();
     }
 }
 
-function getRowInput(list, currentInput) {
-    const currentIndex = list.indexOf(currentInput);
-    if (currentIndex >= 0 && currentIndex < list.length) return list[currentIndex];
-    if (list.length > 0) return list[0];
-    return null;
+// Focus next input in same column (vertical navigation)
+function focusVertical(input, direction) {
+    const inputs = getPartInputs();
+    let currentList = null;
+    
+    if (inputs.w.includes(input)) currentList = inputs.w;
+    else if (inputs.h.includes(input)) currentList = inputs.h;
+    else if (inputs.qty.includes(input)) currentList = inputs.qty;
+    
+    if (!currentList) return;
+    
+    const idx = currentList.indexOf(input);
+    if (idx === -1) return;
+    
+    let nextIdx = idx + direction;
+    if (nextIdx < 0) nextIdx = currentList.length - 1;
+    if (nextIdx >= currentList.length) nextIdx = 0;
+    
+    currentList[nextIdx].focus();
+    currentList[nextIdx].select();
 }
 
 function setupKeyboardNavigation() {
     partsListEl.addEventListener('keydown', (e) => {
         const target = e.target;
-        if (!target.matches('input, select')) return;
-
-        // ArrowDown: move to next row in same column
+        if (!target.matches('input')) return;
+        
+        const inputs = getPartInputs();
+        if (!inputs.w.includes(target) && !inputs.h.includes(target) && !inputs.qty.includes(target)) {
+            return;
+        }
+        
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             focusVertical(target, 1);
-        }
-        // ArrowUp: move to previous row in same column
-        else if (e.key === 'ArrowUp') {
+        } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             focusVertical(target, -1);
-        }
-        // Enter: move to next field in sequence (w -> h -> qty -> w)
-        else if (e.key === 'Enter') {
+        } else if (e.key === 'Enter') {
             e.preventDefault();
-            focusHorizontal(target);
+            focusNextField(target);
         }
     });
 }
@@ -189,8 +209,10 @@ window.removePart = function(index) {
 };
 
 function addPart() {
-    parts.push({ id: Date.now().toString(), name: 'Nowa formatka', w: 500, h: 500, qty: 1, rot: 'any' });
+    parts.push({ id: Date.now().toString(), name: 'Nowa formatka', w: 0, h: 0, qty: 0, rot: 'any' });
     renderPartsList();
+    // Re-setup keyboard navigation after new row added
+    setupKeyboardNavigation();
 }
 
 function showStatus(msg, type = '') {
