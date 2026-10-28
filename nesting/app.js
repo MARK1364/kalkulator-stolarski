@@ -14,8 +14,47 @@ const statusMsg = document.getElementById('statusMsg');
 const boardsContainer = document.getElementById('boardsContainer');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 
+// Navigation helper - get all input/select elements in table
+function getNavigableElements() {
+    const inputs = [];
+    partsListEl.querySelectorAll('input, select').forEach(el => inputs.push(el));
+    return inputs;
+}
+
+function focusNextInput(currentInput, direction = 1) {
+    const inputs = getNavigableElements();
+    const currentIndex = inputs.indexOf(currentInput);
+    if (currentIndex === -1) return;
+
+    let nextIndex = currentIndex + direction;
+    if (nextIndex < 0) nextIndex = inputs.length - 1;
+    if (nextIndex >= inputs.length) nextIndex = 0;
+
+    inputs[nextIndex].focus();
+    // Select text in number inputs for easy editing
+    if (inputs[nextIndex].type === 'number' || inputs[nextIndex].type === 'text') {
+        inputs[nextIndex].select();
+    }
+}
+
+function setupKeyboardNavigation() {
+    partsListEl.addEventListener('keydown', (e) => {
+        const target = e.target;
+        if (!target.matches('input, select')) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'Enter') {
+            e.preventDefault();
+            focusNextInput(target, 1);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            focusNextInput(target, -1);
+        }
+    });
+}
+
 function init() {
     renderPartsList();
+    setupKeyboardNavigation();
     addPartBtn.addEventListener('click', addPart);
     runNestingBtn.addEventListener('click', generateNesting);
     tryLoadImportedParts();
