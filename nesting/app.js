@@ -14,14 +14,21 @@ const statusMsg = document.getElementById('statusMsg');
 const boardsContainer = document.getElementById('boardsContainer');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 
-// Get all inputs (for vertical navigation - name, w, h, qty, rot)
+// Get all inputs (for navigation - name, w, h, qty, rot)
 function getAllInputs() {
     const inputs = [];
     partsListEl.querySelectorAll('input, select').forEach(el => {
         const td = el.closest('td');
-        if (td) inputs.push({ element: el, colIndex: td.cellIndex });
+        if (td) inputs.push({ element: el, colIndex: td.cellIndex, rowIdx: getRowIndex(td) });
     });
     return inputs;
+}
+
+function getRowIndex(td) {
+    const tr = td.closest('tr');
+    if (!tr) return -1;
+    const rows = tr.parentElement.querySelectorAll('tr');
+    return Array.from(rows).indexOf(tr);
 }
 
 // Get w/h/qty inputs only (for Enter navigation)
@@ -41,21 +48,43 @@ function getPartInputs() {
     return inputs;
 }
 
-function getRowIndexFromCol(inputs, input, colIndex) {
-    const list = inputs[colIndex];
-    if (!list) return -1;
-    return list.indexOf(input);
+// Navigation by direction
+function focusByDirection(input, direction) {
+    const allInputs = getAllInputs();
+    const current = allInputs.find(i => i.element === input);
+    if (!current) return;
+    
+    const { rowIdx, colIndex } = current;
+    
+    if (direction === 'left') {
+        // Find left cell with input
+        const leftInputs = allInputs.filter(i => i.rowIdx === rowIdx && i.colIndex < colIndex);
+        if (leftInputs.length > 0) {
+            const target = leftInputs[leftInputs.length - 1];
+            target.element.focus();
+            if (target.element.type === 'number' || target.element.type === 'text') target.element.select();
+        }
+    } else if (direction === 'right') {
+        // Find right cell with input
+        const rightInputs = allInputs.filter(i => i.rowIdx === rowIdx && i.colIndex > colIndex);
+        if (rightInputs.length > 0) {
+            const target = rightInputs[0];
+            target.element.focus();
+            if (target.element.type === 'number' || target.element.type === 'text') target.element.select();
+        }
+    }
 }
 
-// Vertical navigation - moves up/down in same column for ALL input types
+// Vertical navigation - moves up/down in same column
 function focusVertical(input, direction) {
     const allInputs = getAllInputs();
     const current = allInputs.find(i => i.element === input);
     if (!current) return;
     
-    // Find all inputs in same column
-    const sameCol = allInputs.filter(i => i.colIndex === current.colIndex);
-    const idx = sameCol.findIndex(i => i.element === input);
+    const { rowIdx, colIndex } = current;
+    const sameCol = allInputs.filter(i => i.colIndex === colIndex);
+    
+    const idx = sameCol.findIndex(i => i.rowIdx === rowIdx);
     if (idx === -1) return;
     
     let nextIdx = idx + direction;
@@ -77,20 +106,7 @@ function focusNextField(input) {
     else if (inputs.h.includes(input)) currentList = inputs.h;
     else if (inputs.qty.includes(input)) currentList = inputs.qty;
     
-    if (!currentList) {
-        // If on name field, move to w
-        const allInputs = getAllInputs();
-        const nameInput = allInputs.find(i => i.colIndex === 0 && i.element === input);
-        if (nameInput) {
-            const rowInputs = getPartInputs();
-            const idx = getRowIndexFromCol(rowInputs, input, 0);
-            if (idx >= 0 && rowInputs.w[idx]) {
-                rowInputs.w[idx].focus();
-                rowInputs.w[idx].select();
-            }
-        }
-        return;
-    }
+    if (!currentList) return;
     
     const idx = currentList.indexOf(input);
     if (idx === -1) return;
@@ -121,13 +137,25 @@ function setupKeyboardNavigation() {
         const target = e.target;
         if (!target.matches('input, select')) return;
         
-        // ArrowDown/ArrowUp: vertical navigation on ALL columns
+        // ArrowDown: vertical navigation
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             focusVertical(target, 1);
-        } else if (e.key === 'ArrowUp') {
+        }
+        // ArrowUp: vertical navigation
+        else if (e.key === 'ArrowUp') {
             e.preventDefault();
             focusVertical(target, -1);
+        }
+        // ArrowLeft: move to left cell
+        else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            focusByDirection(target, 'left');
+        }
+        // ArrowRight: move to right cell
+        else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            focusByDirection(target, 'right');
         }
         // Enter: horizontal navigation (w -> h -> qty -> new row)
         else if (e.key === 'Enter') {
