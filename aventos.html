@@ -45,42 +45,59 @@
             padding: 20px;
             gap: 20px;
             flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .results-panel {
+            flex: 0 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(61, 58, 54, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .panel-right {
+            flex: 1;
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(61, 58, 54, 0.1);
+            min-width: 380px;
+            max-width: 500px;
         }
 
         @media (min-width: 900px) {
             .main-content {
                 flex-direction: row;
             }
+            .panel-right {
+                order: -1;
+            }
         }
 
-        .panel-left {
-            flex: 1;
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 12px rgba(61, 58, 54, 0.1);
-            min-width: 320px;
-        }
-
-        .panel-left h2 {
-            font-size: 18px;
+        .panel-right h2 {
+            font-size: 16px;
             font-weight: 700;
             color: #5C4F72;
-            margin-bottom: 16px;
-            padding-bottom: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
             border-bottom: 2px solid #E8E4DD;
         }
 
         .form-group {
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
 
         label {
             display: block;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #5C4F72;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .input-wrapper {
@@ -89,14 +106,15 @@
 
         input, select {
             width: 100%;
-            padding: 10px 12px;
-            font-size: 16px;
+            padding: 5px 10px;
+            font-size: 14px;
             border: 2px solid #C9C4BB;
-            border-radius: 8px;
+            border-radius: 6px;
             background: #fff;
             color: #3D3A36;
             font-family: inherit;
             outline: none;
+            height: 36px;
         }
 
         input:focus, select:focus {
@@ -106,85 +124,77 @@
 
         .unit {
             position: absolute;
-            right: 12px;
+            right: 10px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 13px;
+            font-size: 12px;
             color: #9A9590;
             pointer-events: none;
-        }
-
-        .results-panel {
-            flex: 1;
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 12px rgba(61, 58, 54, 0.1);
         }
 
         .results-banner {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 6px;
+            margin-bottom: 12px;
         }
 
         .metric-box {
             background: #EFE9F2;
             border: 2px solid #D0C6DE;
-            border-radius: 10px;
-            padding: 14px;
+            border-radius: 6px;
+            padding: 8px;
             text-align: center;
         }
 
         .metric-title {
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             font-weight: 700;
             color: #5C4F72;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
         }
 
         .metric-value {
-            font-size: 22px;
+            font-size: 17px;
             font-weight: 800;
             color: #7A6B8F;
         }
 
         .metric-unit {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
             color: #5C4F72;
         }
 
         .family-group {
-            margin-bottom: 18px;
+            margin-bottom: 12px;
         }
 
         .family-header {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: #7A6B8F;
-            margin-bottom: 10px;
-            padding-bottom: 6px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
             border-bottom: 2px solid #E8E4DD;
         }
 
         .models-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         .model-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 14px;
-            border-radius: 8px;
+            padding: 5px 8px;
+            border-radius: 5px;
             border: 2px solid #D5D0C8;
-            font-size: 15px;
+            font-size: 13px;
             background: #FAF7F0;
             transition: all 0.2s ease;
         }
@@ -198,14 +208,14 @@
 
         .model-code {
             font-family: 'Courier New', monospace;
-            font-size: 15px;
+            font-size: 13px;
             color: #5C4F72;
         }
 
         .model-badge {
-            font-size: 12px;
-            padding: 4px 10px;
-            border-radius: 6px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 5px;
             background: #D5D0C8;
             color: #6E6962;
             font-weight: 700;
@@ -217,11 +227,11 @@
         }
 
         .formula-note {
-            font-size: 13px;
+            font-size: 12px;
             color: #6E6962;
-            line-height: 1.5;
-            margin-top: 16px;
-            padding-top: 12px;
+            line-height: 1.3;
+            margin-top: 10px;
+            padding-top: 8px;
             border-top: 2px dashed #C9C4BB;
         }
 
@@ -229,9 +239,12 @@
             .toolbar { padding: 12px 16px; }
             .toolbar h1 { font-size: 18px; }
             .main-content { padding: 12px; gap: 14px; }
-            .panel-left, .results-panel { padding: 16px; }
-            .panel-left h2 { font-size: 16px; }
+            .results-panel, .panel-right { padding: 12px; }
+            .panel-right h2 { font-size: 14px; }
             .results-banner { grid-template-columns: 1fr; }
+            .main-content { flex-direction: column-reverse; }
+            .panel-right { max-width: 100%; }
+            .results-panel { max-width: 100%; }
         }
     </style>
 </head>
@@ -242,8 +255,8 @@
 </div>
 
 <div class="main-content">
-    <!-- PANEL WEJŚCIOWY -->
-    <div class="panel-left">
+    <!-- PANEL WEJŚCIOWY (prawa strona na PC, górna na telefonie) -->
+    <div class="panel-right">
         <h2>Wymiary i Front</h2>
 
         <div class="form-group">
@@ -303,7 +316,7 @@
         </div>
     </div>
 
-    <!-- PANEL WYNIKÓW -->
+    <!-- PANEL WYNIKÓW (lewa strona na PC, dolna na telefonie) -->
     <div class="results-panel">
         <div class="results-banner">
             <div class="metric-box">
@@ -318,25 +331,21 @@
 
         <h2>Dobór siłowników</h2>
 
-        <!-- HK-S -->
         <div class="family-group">
             <div class="family-header">Aventos HK-S (Uchylny mały)</div>
             <div class="models-list" id="list-hks"></div>
         </div>
 
-        <!-- HK TOP -->
         <div class="family-group">
             <div class="family-header">Aventos HK TOP (Uchylny)</div>
             <div class="models-list" id="list-hktop"></div>
         </div>
 
-        <!-- HK-XS -->
         <div class="family-group">
             <div class="family-header">Aventos HK-XS (Kompaktowy)</div>
             <div class="models-list" id="list-hkxs"></div>
         </div>
 
-        <!-- HF -->
         <div class="family-group">
             <div class="family-header">Aventos HF (Fronty składane)</div>
             <div class="models-list" id="list-hf"></div>
@@ -345,7 +354,6 @@
 </div>
 
 <script>
-    // Baza modeli i zakresów LF (dokładnie z arkusza Blum)
     const databases = {
         hks: [
             { code: "20K2B00.02", min: 220, max: 500 },
@@ -397,16 +405,14 @@
     function renderGroup(containerId, models, currentLF) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
-
         models.forEach(m => {
             const isMatch = currentLF >= m.min && currentLF <= m.max;
             const row = document.createElement('div');
             row.className = `model-row ${isMatch ? 'matched' : ''}`;
-
             row.innerHTML = `
                 <div>
                     <span class="model-code">${m.code}</span>
-                    <span style="color: ${isMatch ? '#047857' : '#6E6962'}; margin-left: 8px; font-size: 14px;">
+                    <span style="color: ${isMatch ? '#047857' : '#6E6962'}; margin-left: 8px; font-size: 12px;">
                         (LF: ${m.min} – ${m.max})
                     </span>
                 </div>
@@ -417,20 +423,17 @@
     }
 
     function calculate() {
-        const fh = parseFloat(fhInput.value) || 0; // mm
-        const fb = parseFloat(fbInput.value) || 0; // mm
-        const fd = parseFloat(fdInput.value) || 0; // mm
-        const handle = parseFloat(handleInput.value) || 0; // kg
+        const fh = parseFloat(fhInput.value) || 0;
+        const fb = parseFloat(fbInput.value) || 0;
+        const fd = parseFloat(fdInput.value) || 0;
+        const handle = parseFloat(handleInput.value) || 0;
 
         let density = parseFloat(matSelect.value);
         if (matSelect.value === 'custom') {
             density = parseFloat(customDensityInput.value) || 0;
         }
 
-        // Waga frontu: (FH/1000) * (FB/1000) * (FD/1000) * density
         const fg = (fh * fb * fd * density) / 1000000000;
-
-        // Współczynnik LF = FH * (FG + 2 * waga uchwytu)
         const lf = Math.round(fh * (fg + 2 * handle));
 
         fgVal.textContent = fg.toFixed(2);
@@ -442,7 +445,6 @@
         renderGroup('list-hf', databases.hf, lf);
     }
 
-    // Pierwsze przeliczenie przy starcie
     calculate();
 </script>
 
