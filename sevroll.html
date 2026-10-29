@@ -447,7 +447,7 @@
             <tr>
                 <th colspan="7" class="group-title sec-sevroll">Sevroll Box 3D VR</th>
                 <th colspan="2" class="group-title sec-formatki">Formatki szuflady</th>
-                <th colspan="3" class="group-title sec-wewnetrzne">Wewnętrzne</th>
+                <th colspan="4" class="group-title sec-wewnetrzne">Wewnętrzne</th>
                 <th class="col-del"></th>
             </tr>
             <tr>
@@ -461,6 +461,7 @@
                 <th class="col-header col-out-wide sec-formatki">Tył</th>
                 <th class="col-header col-out-wide sec-formatki">Dno</th>
                 <th class="col-header col-yn sec-wewnetrzne">Tak /<br>Nie</th>
+                <th class="col-header col-glass sec-wewnetrzne">Materiał<br>list</th>
                 <th class="col-header col-out sec-wewnetrzne">Panel</th>
                 <th class="col-header col-out sec-wewnetrzne">Reling</th>
                 <th class="col-del"></th>
@@ -530,7 +531,7 @@ const HEIGHT_PANEL_ONLY = 101;
 const RUNNER_OPTIONS = [270, 300, 350, 400, 450, 500, 550];
 const HEIGHT_OPTIONS = [60, 101, 148, 183];
 
-const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 101, internal: 'Nie' };
+const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 101, internal: 'Nie', glass: 'stal' };
 
 const DEFAULT_CABINETS = [
     { name: '', szafek: 1, szuflad: 1, drawers: [{ ...DEFAULT_DRAWER }] }
@@ -594,13 +595,19 @@ function drawerRowHtml(data) {
             <option value="Nie"${d.internal === 'Nie' ? ' selected' : ''}>Nie</option>
             <option value="Tak"${d.internal === 'Tak' ? ' selected' : ''}>Tak</option>
         </select></td>
+        <td class="sec-wewnetrzne">
+            <select class="inp-glass">
+                <option value="stal" selected>Stal</option>
+                <option value="szklo">Szkło</option>
+            </select>
+        </td>
         <td class="sec-wewnetrzne cell-calc out-panel empty">—</td>
         <td class="sec-wewnetrzne cell-calc out-reling empty">—</td>
     `;
 }
 
 function bindDrawerRow(tr) {
-    tr.querySelectorAll('.inp-runner, .inp-height, .inp-internal').forEach(el => {
+    tr.querySelectorAll('.inp-runner, .inp-height, .inp-internal, .inp-glass').forEach(el => {
         el.addEventListener('input', () => updateRow(tr));
         el.addEventListener('change', () => updateRow(tr));
     });
@@ -710,7 +717,8 @@ function getDrawerDataFromRow(tr) {
         ext: parseFloat(first.querySelector('.inp-ext')?.value) || 600,
         runner: parseFloat(tr.querySelector('.inp-runner')?.value) || 500,
         height: parseFloat(tr.querySelector('.inp-height')?.value) || 101,
-        internal: tr.querySelector('.inp-internal')?.value || 'Nie'
+        internal: tr.querySelector('.inp-internal')?.value || 'Nie',
+        glass: tr.querySelector('.inp-glass')?.value || 'stal'
     };
 }
 
@@ -805,7 +813,7 @@ function addCabinetGroup(data = {}) {
     updateSummary();
 }
 
-function calcRow(ext, runner, height, internal) {
+function calcRow(ext, runner, height, internal, glass) {
     const intW = ext - BOARD_OFFSET;
     if (intW <= 0) return null;
 
@@ -847,7 +855,8 @@ function getRowParts(tr) {
     const runner = parseFloat(tr.querySelector('.inp-runner').value) || 0;
     const height = parseFloat(tr.querySelector('.inp-height').value) || 0;
     const internal = tr.querySelector('.inp-internal').value;
-    const r = calcRow(ext, runner, height, internal);
+    const glass = tr.querySelector('.inp-glass')?.value || 'stal';
+    const r = calcRow(ext, runner, height, internal, glass);
     if (!r) return [];
 
     const cabinetQty = parseInt(firstRow?.querySelector('.inp-szafek')?.value) || 1;
@@ -1043,7 +1052,8 @@ function updateRow(tr) {
     }
 
     const internal = internalSel.value;
-    const r = calcRow(ext, runner, height, internal);
+    const glass = tr.querySelector('.inp-glass')?.value || 'stal';
+    const r = calcRow(ext, runner, height, internal, glass);
 
     const elDno = tr.querySelector('.out-dno');
     const elTyl = tr.querySelector('.out-tyl');
