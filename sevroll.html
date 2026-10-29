@@ -461,9 +461,9 @@
                 <th class="col-header col-out-wide sec-formatki">Tył</th>
                 <th class="col-header col-out-wide sec-formatki">Dno</th>
                 <th class="col-header col-yn sec-wewnetrzne">Tak /<br>Nie</th>
-                <th class="col-header col-glass sec-wewnetrzne">Materiał<br>list</th>
                 <th class="col-header col-out sec-wewnetrzne">Panel</th>
                 <th class="col-header col-out sec-wewnetrzne">Reling</th>
+                <th class="col-header col-glass sec-wewnetrzne">Szkło</th>
                 <th class="col-del"></th>
             </tr>
         </thead>
@@ -595,14 +595,14 @@ function drawerRowHtml(data) {
             <option value="Nie"${d.internal === 'Nie' ? ' selected' : ''}>Nie</option>
             <option value="Tak"${d.internal === 'Tak' ? ' selected' : ''}>Tak</option>
         </select></td>
-        <td class="sec-wewnetrzne">
-            <select class="inp-glass">
-                <option value="stal" selected>Stal</option>
-                <option value="szklo">Szkło</option>
-            </select>
-        </td>
         <td class="sec-wewnetrzne cell-calc out-panel empty">—</td>
         <td class="sec-wewnetrzne cell-calc out-reling empty">—</td>
+        <td class="sec-wewnetrzne">
+            <select class="inp-glass">
+                <option value="0" selected>Nie</option>
+                <option value="1">Tak</option>
+            </select>
+        </td>
     `;
 }
 
@@ -826,10 +826,15 @@ function calcRow(ext, runner, height, internal, glass) {
     const tyl = tylW > 0 && tylH > 0 ? `${tylW} x ${tylH}` : '—';
 
     const isInternal = internal === 'Tak' && height !== HEIGHT_NO_INTERNAL;
-    // Panel TP LW-100, reling YO LW-87 (stałe wartości dla obu typów list)
-    const panelW = isInternal && intW - OFFSETS.panel > 0 ? intW - OFFSETS.panel : 0;
+    
+    // Dla stali: panel TP LW-100 (100mm), reling YO LW-87 (87mm)
+    // Dla szkła: mniejsze odjęcia (60mm dla panelu, 50mm dla relingu)
+    const panelReduction = glass === '1' ? 60 : OFFSETS.panel;
+    const railReduction = glass === '1' ? 50 : OFFSETS.rail;
+    
+    const panelW = isInternal && intW - panelReduction > 0 ? intW - panelReduction : 0;
     const needsRail = isInternal && height !== HEIGHT_NO_INTERNAL && height !== HEIGHT_PANEL_ONLY;
-    const railW = needsRail && intW - OFFSETS.rail > 0 ? intW - OFFSETS.rail : 0;
+    const railW = needsRail && intW - railReduction > 0 ? intW - railReduction : 0;
 
     return {
         intW,
@@ -837,7 +842,8 @@ function calcRow(ext, runner, height, internal, glass) {
         tyl,
         panel: panelW ? String(panelW) : '',
         reling: railW ? String(railW) : '',
-        dnoW, dnoD, tylW, tylH, panelW, railW
+        dnoW, dnoD, tylW, tylH, panelW, railW,
+        isGlass: glass === '1'
     };
 }
 
@@ -868,11 +874,18 @@ function getRowParts(tr) {
     if (r.dnoW > 0 && r.dnoD > 0) {
         items.push({ type: 'Dno', name: `${baseName} — dno`, w: r.dnoW, h: r.dnoD, cabinetQty });
     }
+    
+    // Gdy wybrano szkło - dodaj panele szkła z mniejszymi odjęciami
+    // Gdy nie wybrano szkła - dodaj panele stali z normalnymi odjęciami
     if (r.panelW > 0) {
-        items.push({ type: 'Panel', name: `${baseName} — panel`, w: r.panelW, h: height, cabinetQty });
+        const type = r.isGlass ? 'PanelSzklo' : 'Panel';
+        const name = r.isGlass ? `${baseName} — panel szkło` : `${baseName} — panel`;
+        items.push({ type, name, w: r.panelW, h: height, cabinetQty });
     }
     if (r.railW > 0) {
-        items.push({ type: 'Reling', name: `${baseName} — reling`, w: r.railW, h: height, cabinetQty });
+        const type = r.isGlass ? 'RelingSzklo' : 'Reling';
+        const name = r.isGlass ? `${baseName} — reling szkło` : `${baseName} — reling`;
+        items.push({ type, name, w: r.railW, h: height, cabinetQty });
     }
     return items;
 }
@@ -931,7 +944,9 @@ function updateSummary() {
     const tyly = lastSummaryParts.filter(p => p.type === 'Tył').sort(sortBySize);
     const dna = lastSummaryParts.filter(p => p.type === 'Dno').sort(sortBySize);
     const panele = lastSummaryParts.filter(p => p.type === 'Panel').sort(sortBySize);
+    const paneleSzklo = lastSummaryParts.filter(p => p.type === 'PanelSzklo').sort(sortBySize);
     const relingi = lastSummaryParts.filter(p => p.type === 'Reling').sort(sortBySize);
+    const relingiSzklo = lastSummaryParts.filter(p => p.type === 'RelingSzklo').sort(sortBySize);
 
     const emptyEl = document.getElementById('summaryEmpty');
     const tablesWrap = document.getElementById('summaryTablesWrap');
@@ -955,23 +970,37 @@ function updateSummary() {
     html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyDno"></tbody></table></div></div>';
     
     if (panele.length > 0) {
-        html += '<div class="summary-block"><h3 class="summary-block-title">Panele (szkło)</h3>';
+        html += '<div class="summary-block"><h3 class="summary-block-title">Panele (stal)</h3>';
         html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyPanel"></tbody></table></div></div>';
     }
+    if (paneleSzklo.length > 0) {
+        html += '<div class="summary-block"><h3 class="summary-block-title">Panele (szkło)</h3>';
+        html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyPanelSzklo"></tbody></table></div></div>';
+    }
     if (relingi.length > 0) {
-        html += '<div class="summary-block"><h3 class="summary-block-title">Relingi (szkło)</h3>';
+        html += '<div class="summary-block"><h3 class="summary-block-title">Relingi (stal)</h3>';
         html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyReling"></tbody></table></div></div>';
     }
+    if (relingiSzklo.length > 0) {
+        html += '<div class="summary-block"><h3 class="summary-block-title">Relingi (szkło)</h3>';
+        html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyRelingSzklo"></tbody></table></div></div>';
+    }
     
-    document.getElementById('summaryListWrap').innerHTML = html + document.getElementById('summaryListWrap').innerHTML.split('</div></div>')[1];
+    document.getElementById('summaryListWrap').innerHTML = html;
     
     document.getElementById('summaryBodyTyl').innerHTML = renderSummaryRows(tyly);
     document.getElementById('summaryBodyDno').innerHTML = renderSummaryRows(dna);
     if (document.getElementById('summaryBodyPanel')) {
         document.getElementById('summaryBodyPanel').innerHTML = renderSummaryRows(panele);
     }
+    if (document.getElementById('summaryBodyPanelSzklo')) {
+        document.getElementById('summaryBodyPanelSzklo').innerHTML = renderSummaryRows(paneleSzklo);
+    }
     if (document.getElementById('summaryBodyReling')) {
         document.getElementById('summaryBodyReling').innerHTML = renderSummaryRows(relingi);
+    }
+    if (document.getElementById('summaryBodyRelingSzklo')) {
+        document.getElementById('summaryBodyRelingSzklo').innerHTML = renderSummaryRows(relingiSzklo);
     }
 
     exportBtn.disabled = false;
@@ -991,7 +1020,9 @@ function exportCsv() {
         ...lastSummaryParts.filter(p => p.type === 'Tył').sort(sortBySize),
         ...lastSummaryParts.filter(p => p.type === 'Dno').sort(sortBySize),
         ...lastSummaryParts.filter(p => p.type === 'Panel').sort(sortBySize),
-        ...lastSummaryParts.filter(p => p.type === 'Reling').sort(sortBySize)
+        ...lastSummaryParts.filter(p => p.type === 'PanelSzklo').sort(sortBySize),
+        ...lastSummaryParts.filter(p => p.type === 'Reling').sort(sortBySize),
+        ...lastSummaryParts.filter(p => p.type === 'RelingSzklo').sort(sortBySize)
     ];
     ordered.forEach(p => {
         lines.push([p.type, p.w, p.h, p.qty].map(csvCell).join(';'));
