@@ -524,14 +524,14 @@
 <script>
 const NESTING_STORAGE_KEY = 'stolarnia_nesting_parts';
 const BOARD_OFFSET = 36;
-const OFFSETS = { dnoWidth: 21, dnoDepth: 20, tylWidth: 42, panel: 100, rail: 87 };
+const OFFSETS = { dnoWidth: 21, dnoDepth: 20, tylWidth: 42, panel: 100, rail: 87, szklo: 85 };
 const HEIGHT_NO_INTERNAL = 60;
 const HEIGHT_PANEL_ONLY = 101;
 
 const RUNNER_OPTIONS = [270, 300, 350, 400, 450, 500, 550];
 const HEIGHT_OPTIONS = [60, 101, 148, 183];
 
-const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 101, internal: 'Nie', glass: 'stal' };
+const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 101, internal: 'Nie' };
 
 const DEFAULT_CABINETS = [
     { name: '', szafek: 1, szuflad: 1, drawers: [{ ...DEFAULT_DRAWER }] }
@@ -597,14 +597,12 @@ function drawerRowHtml(data) {
         </select></td>
         <td class="sec-wewnetrzne cell-calc out-panel empty">—</td>
         <td class="sec-wewnetrzne cell-calc out-reling empty">—</td>
-        <td class="sec-wewnetrzne" style="text-align: center;">
-            <input type="checkbox" class="inp-glass" style="width: 18px; height: 18px; margin: 0;">
-        </td>
+        <td class="sec-wewnetrzne cell-calc out-szklo empty">—</td>
     `;
 }
 
 function bindDrawerRow(tr) {
-    tr.querySelectorAll('.inp-runner, .inp-height, .inp-internal, .inp-glass').forEach(el => {
+    tr.querySelectorAll('.inp-runner, .inp-height, .inp-internal').forEach(el => {
         el.addEventListener('input', () => updateRow(tr));
         el.addEventListener('change', () => updateRow(tr));
     });
@@ -714,8 +712,7 @@ function getDrawerDataFromRow(tr) {
         ext: parseFloat(first.querySelector('.inp-ext')?.value) || 600,
         runner: parseFloat(tr.querySelector('.inp-runner')?.value) || 500,
         height: parseFloat(tr.querySelector('.inp-height')?.value) || 101,
-        internal: tr.querySelector('.inp-internal')?.value || 'Nie',
-        glass: tr.querySelector('.inp-glass')?.value || 'stal'
+        internal: tr.querySelector('.inp-internal')?.value || 'Nie'
     };
 }
 
@@ -810,7 +807,7 @@ function addCabinetGroup(data = {}) {
     updateSummary();
 }
 
-function calcRow(ext, runner, height, internal, glass) {
+function calcRow(ext, runner, height, internal) {
     const intW = ext - BOARD_OFFSET;
     if (intW <= 0) return null;
 
@@ -824,14 +821,11 @@ function calcRow(ext, runner, height, internal, glass) {
 
     const isInternal = internal === 'Tak' && height !== HEIGHT_NO_INTERNAL;
     
-    // Dla stali: panel TP LW-100 (100mm), reling YO LW-87 (87mm)
-    // Dla szkła: mniejsze odjęcia (60mm dla panelu, 50mm dla relingu)
-    const panelReduction = glass === '1' ? 60 : OFFSETS.panel;
-    const railReduction = glass === '1' ? 50 : OFFSETS.rail;
-    
-    const panelW = isInternal && intW - panelReduction > 0 ? intW - panelReduction : 0;
+    // Panel TP LW-100, reling YO LW-87, szkło LW-85
+    const panelW = isInternal && intW - OFFSETS.panel > 0 ? intW - OFFSETS.panel : 0;
     const needsRail = isInternal && height !== HEIGHT_NO_INTERNAL && height !== HEIGHT_PANEL_ONLY;
-    const railW = needsRail && intW - railReduction > 0 ? intW - railReduction : 0;
+    const railW = needsRail && intW - OFFSETS.rail > 0 ? intW - OFFSETS.rail : 0;
+    const szkloW = isInternal && intW - OFFSETS.szklo > 0 ? intW - OFFSETS.szklo : 0;
 
     return {
         intW,
@@ -839,8 +833,8 @@ function calcRow(ext, runner, height, internal, glass) {
         tyl,
         panel: panelW ? String(panelW) : '',
         reling: railW ? String(railW) : '',
-        dnoW, dnoD, tylW, tylH, panelW, railW,
-        isGlass: glass === '1'
+        szklo: szkloW ? String(szkloW) : '',
+        dnoW, dnoD, tylW, tylH, panelW, railW, szkloW
     };
 }
 
@@ -858,8 +852,7 @@ function getRowParts(tr) {
     const runner = parseFloat(tr.querySelector('.inp-runner').value) || 0;
     const height = parseFloat(tr.querySelector('.inp-height').value) || 0;
     const internal = tr.querySelector('.inp-internal').value;
-    const glass = tr.querySelector('.inp-glass')?.value || 'stal';
-    const r = calcRow(ext, runner, height, internal, glass);
+    const r = calcRow(ext, runner, height, internal);
     if (!r) return [];
 
     const cabinetQty = parseInt(firstRow?.querySelector('.inp-szafek')?.value) || 1;
@@ -871,18 +864,14 @@ function getRowParts(tr) {
     if (r.dnoW > 0 && r.dnoD > 0) {
         items.push({ type: 'Dno', name: `${baseName} — dno`, w: r.dnoW, h: r.dnoD, cabinetQty });
     }
-    
-    // Gdy wybrano szkło - dodaj panele szkła z mniejszymi odjęciami
-    // Gdy nie wybrano szkła - dodaj panele stali z normalnymi odjęciami
     if (r.panelW > 0) {
-        const type = r.isGlass ? 'PanelSzklo' : 'Panel';
-        const name = r.isGlass ? `${baseName} — panel szkło` : `${baseName} — panel`;
-        items.push({ type, name, w: r.panelW, h: height, cabinetQty });
+        items.push({ type: 'Panel', name: `${baseName} — panel`, w: r.panelW, h: height, cabinetQty });
     }
     if (r.railW > 0) {
-        const type = r.isGlass ? 'RelingSzklo' : 'Reling';
-        const name = r.isGlass ? `${baseName} — reling szkło` : `${baseName} — reling`;
-        items.push({ type, name, w: r.railW, h: height, cabinetQty });
+        items.push({ type: 'Reling', name: `${baseName} — reling`, w: r.railW, h: height, cabinetQty });
+    }
+    if (r.szkloW > 0) {
+        items.push({ type: 'Szkło', name: `${baseName} — szkło`, w: r.szkloW, h: height, cabinetQty });
     }
     return items;
 }
@@ -904,7 +893,7 @@ function aggregateParts(allItems) {
         }
     }
     return Array.from(map.values()).sort((a, b) => {
-        const typeOrder = { Tył: 0, Dno: 1, Panel: 2, Reling: 3 };
+        const typeOrder = { Tył: 0, Dno: 1, Panel: 2, Reling: 3, 'Szkło': 4 };
         const ta = typeOrder[a.type] ?? 9;
         const tb = typeOrder[b.type] ?? 9;
         if (ta !== tb) return ta - tb;
@@ -941,9 +930,8 @@ function updateSummary() {
     const tyly = lastSummaryParts.filter(p => p.type === 'Tył').sort(sortBySize);
     const dna = lastSummaryParts.filter(p => p.type === 'Dno').sort(sortBySize);
     const panele = lastSummaryParts.filter(p => p.type === 'Panel').sort(sortBySize);
-    const paneleSzklo = lastSummaryParts.filter(p => p.type === 'PanelSzklo').sort(sortBySize);
     const relingi = lastSummaryParts.filter(p => p.type === 'Reling').sort(sortBySize);
-    const relingiSzklo = lastSummaryParts.filter(p => p.type === 'RelingSzklo').sort(sortBySize);
+    const szkla = lastSummaryParts.filter(p => p.type === 'Szkło').sort(sortBySize);
 
     const emptyEl = document.getElementById('summaryEmpty');
     const tablesWrap = document.getElementById('summaryTablesWrap');
@@ -967,20 +955,16 @@ function updateSummary() {
     html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyDno"></tbody></table></div></div>';
     
     if (panele.length > 0) {
-        html += '<div class="summary-block"><h3 class="summary-block-title">Panele (stal)</h3>';
+        html += '<div class="summary-block"><h3 class="summary-block-title">Panele</h3>';
         html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyPanel"></tbody></table></div></div>';
     }
-    if (paneleSzklo.length > 0) {
-        html += '<div class="summary-block"><h3 class="summary-block-title">Panele (szkło)</h3>';
-        html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyPanelSzklo"></tbody></table></div></div>';
-    }
     if (relingi.length > 0) {
-        html += '<div class="summary-block"><h3 class="summary-block-title">Relingi (stal)</h3>';
+        html += '<div class="summary-block"><h3 class="summary-block-title">Relingi</h3>';
         html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyReling"></tbody></table></div></div>';
     }
-    if (relingiSzklo.length > 0) {
-        html += '<div class="summary-block"><h3 class="summary-block-title">Relingi (szkło)</h3>';
-        html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyRelingSzklo"></tbody></table></div></div>';
+    if (szkla.length > 0) {
+        html += '<div class="summary-block"><h3 class="summary-block-title">Szkła</h3>';
+        html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodySzklo"></tbody></table></div></div>';
     }
     
     document.getElementById('summaryListWrap').innerHTML = html;
@@ -990,14 +974,11 @@ function updateSummary() {
     if (document.getElementById('summaryBodyPanel')) {
         document.getElementById('summaryBodyPanel').innerHTML = renderSummaryRows(panele);
     }
-    if (document.getElementById('summaryBodyPanelSzklo')) {
-        document.getElementById('summaryBodyPanelSzklo').innerHTML = renderSummaryRows(paneleSzklo);
-    }
     if (document.getElementById('summaryBodyReling')) {
         document.getElementById('summaryBodyReling').innerHTML = renderSummaryRows(relingi);
     }
-    if (document.getElementById('summaryBodyRelingSzklo')) {
-        document.getElementById('summaryBodyRelingSzklo').innerHTML = renderSummaryRows(relingiSzklo);
+    if (document.getElementById('summaryBodySzklo')) {
+        document.getElementById('summaryBodySzklo').innerHTML = renderSummaryRows(szkla);
     }
 
     exportBtn.disabled = false;
@@ -1017,9 +998,8 @@ function exportCsv() {
         ...lastSummaryParts.filter(p => p.type === 'Tył').sort(sortBySize),
         ...lastSummaryParts.filter(p => p.type === 'Dno').sort(sortBySize),
         ...lastSummaryParts.filter(p => p.type === 'Panel').sort(sortBySize),
-        ...lastSummaryParts.filter(p => p.type === 'PanelSzklo').sort(sortBySize),
         ...lastSummaryParts.filter(p => p.type === 'Reling').sort(sortBySize),
-        ...lastSummaryParts.filter(p => p.type === 'RelingSzklo').sort(sortBySize)
+        ...lastSummaryParts.filter(p => p.type === 'Szkło').sort(sortBySize)
     ];
     ordered.forEach(p => {
         lines.push([p.type, p.w, p.h, p.qty].map(csvCell).join(';'));
@@ -1080,23 +1060,25 @@ function updateRow(tr) {
     }
 
     const internal = internalSel.value;
-    const glass = tr.querySelector('.inp-glass')?.value || 'stal';
-    const r = calcRow(ext, runner, height, internal, glass);
+    const r = calcRow(ext, runner, height, internal);
 
     const elDno = tr.querySelector('.out-dno');
     const elTyl = tr.querySelector('.out-tyl');
     const elPanel = tr.querySelector('.out-panel');
     const elReling = tr.querySelector('.out-reling');
+    const elSzklo = tr.querySelector('.out-szklo');
 
     if (!r) {
         elDno.textContent = '—';
         elTyl.textContent = '—';
         elPanel.textContent = '—';
         elReling.textContent = '—';
+        elSzklo.textContent = '—';
         elDno.classList.add('empty');
         elTyl.classList.add('empty');
         elPanel.classList.add('empty');
         elReling.classList.add('empty');
+        elSzklo.classList.add('empty');
         updateSummary();
         return;
     }
@@ -1112,6 +1094,9 @@ function updateRow(tr) {
 
     elReling.textContent = r.reling || '—';
     elReling.classList.toggle('empty', !r.reling);
+
+    elSzklo.textContent = r.szklo || '—';
+    elSzklo.classList.toggle('empty', !r.szklo);
 
     updateSummary();
 }
