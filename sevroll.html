@@ -457,7 +457,7 @@
                 <th class="col-header col-num sec-sevroll">Zew szer<br>korpusu</th>
                 <th class="col-header col-num sec-sevroll">Wew szer<br>korpusu</th>
                 <th class="col-header col-runner sec-sevroll">Długość<br>prowadnicy</th>
-                <th class="col-header col-height sec-sevroll">Wysokość<br>pleców</th>
+                <th class="col-header col-height sec-sevroll">Nazwa<br>szuflady</th>
                 <th class="col-header col-out-wide sec-formatki">Tył</th>
                 <th class="col-header col-out-wide sec-formatki">Dno</th>
                 <th class="col-header col-yn sec-wewnetrzne">Tak /<br>Nie</th>
@@ -525,20 +525,18 @@
 const NESTING_STORAGE_KEY = 'stolarnia_nesting_parts';
 const BOARD_OFFSET = 36;
 const OFFSETS = { dnoWidth: 21, dnoDepth: 20, tylWidth: 42, panel: 100, rail: 87, szklo: 85 };
-const HEIGHT_NO_INTERNAL = 60;
-const HEIGHT_PANEL_ONLY = 101;
+const HEIGHT_NO_INTERNAL = 90;
+// Mapa: nazwa szuflady (boczek) → wysokość pleców (tył) do obliczeń
+const HEIGHT_TO_TYL = { 90: 60, 131: 101, 178: 148, 213: 183 };
 
-// Mapa wysokości szkła (Y) zależna od wysokości pleców (tył H):
-// tył 60 → boczek 90 → szkło 48
-// tył 101 → boczek 131 → szkło 89
-// tył 148 → boczek 178 → szkło 135
-// tył 183 → boczek 213 → szkło 170
-const SZKLO_HEIGHT_MAP = { 60: 48, 101: 89, 148: 135, 183: 170 };
+// Mapa wysokości szkła (Y) zależna od nazwy szuflady:
+// 90 → 48, 131 → 89, 178 → 135, 213 → 170
+const SZKLO_HEIGHT_MAP = { 90: 48, 131: 89, 178: 135, 213: 170 };
 
 const RUNNER_OPTIONS = [270, 300, 350, 400, 450, 500, 550];
-const HEIGHT_OPTIONS = [60, 101, 148, 183];
+const HEIGHT_OPTIONS = [90, 131, 178, 213];
 
-const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 101, internal: 'Nie' };
+const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 131, internal: 'Nie' };
 
 const DEFAULT_CABINETS = [
     { name: '', szafek: 1, szuflad: 1, drawers: [{ ...DEFAULT_DRAWER }] }
@@ -818,10 +816,12 @@ function calcRow(ext, runner, height, internal) {
     const intW = ext - BOARD_OFFSET;
     if (intW <= 0) return null;
 
+    // Mapa: nazwa szuflady → wysokość pleców do obliczeń
+    const tylH = HEIGHT_TO_TYL[height] || height;
+
     const dnoW = intW - OFFSETS.dnoWidth;
     const dnoD = runner - OFFSETS.dnoDepth;
     const tylW = intW - OFFSETS.tylWidth;
-    const tylH = height;
 
     const dno = dnoW > 0 && dnoD > 0 ? `${dnoW} x ${dnoD}` : '—';
     const tyl = tylW > 0 && tylH > 0 ? `${tylW} x ${tylH}` : '—';
@@ -874,10 +874,10 @@ function getRowParts(tr) {
         items.push({ type: 'Dno', name: `${baseName} — dno`, w: r.dnoW, h: r.dnoD, cabinetQty });
     }
     if (r.panelW > 0) {
-        items.push({ type: 'Panel', name: `${baseName} — panel`, w: r.panelW, h: height, cabinetQty });
+        items.push({ type: 'Panel', name: `${baseName} — panel`, w: r.panelW, h: r.tylH, cabinetQty });
     }
     if (r.railW > 0) {
-        items.push({ type: 'Reling', name: `${baseName} — reling`, w: r.railW, h: height, cabinetQty });
+        items.push({ type: 'Reling', name: `${baseName} — reling`, w: r.railW, h: r.tylH, cabinetQty });
     }
     if (r.szkloW > 0 && r.szkloH > 0) {
         items.push({ type: 'Szkło', name: `${baseName} — szkło`, w: r.szkloW, h: r.szkloH, cabinetQty });
