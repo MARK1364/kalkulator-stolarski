@@ -528,6 +528,13 @@ const OFFSETS = { dnoWidth: 21, dnoDepth: 20, tylWidth: 42, panel: 100, rail: 87
 const HEIGHT_NO_INTERNAL = 60;
 const HEIGHT_PANEL_ONLY = 101;
 
+// Mapa wysokości szkła (Y) zależna od wysokości pleców (tył H):
+// tył 60 → boczek 90 → szkło 48
+// tył 101 → boczek 131 → szkło 89
+// tył 148 → boczek 178 → szkło 135
+// tył 183 → boczek 213 → szkło 170
+const SZKLO_HEIGHT_MAP = { 60: 48, 101: 89, 148: 135, 183: 170 };
+
 const RUNNER_OPTIONS = [270, 300, 350, 400, 450, 500, 550];
 const HEIGHT_OPTIONS = [60, 101, 148, 183];
 
@@ -823,9 +830,11 @@ function calcRow(ext, runner, height, internal) {
     
     // Panel TP LW-100, reling YO LW-87, szkło LW-85
     const panelW = isInternal && intW - OFFSETS.panel > 0 ? intW - OFFSETS.panel : 0;
-    const needsRail = isInternal && height !== HEIGHT_NO_INTERNAL && height !== HEIGHT_PANEL_ONLY;
-    const railW = needsRail && intW - OFFSETS.rail > 0 ? intW - OFFSETS.rail : 0;
+    // Reling zawsze liczony gdy wewnętrzne = Tak
+    const railW = isInternal && intW - OFFSETS.rail > 0 ? intW - OFFSETS.rail : 0;
     const szkloW = isInternal && intW - OFFSETS.szklo > 0 ? intW - OFFSETS.szklo : 0;
+    const szkloH = SZKLO_HEIGHT_MAP[height] || 0;
+    const szklo = szkloW > 0 && szkloH > 0 ? `${szkloW} x ${szkloH}` : '';
 
     return {
         intW,
@@ -833,8 +842,8 @@ function calcRow(ext, runner, height, internal) {
         tyl,
         panel: panelW ? String(panelW) : '',
         reling: railW ? String(railW) : '',
-        szklo: szkloW ? String(szkloW) : '',
-        dnoW, dnoD, tylW, tylH, panelW, railW, szkloW
+        szklo,
+        dnoW, dnoD, tylW, tylH, panelW, railW, szkloW, szkloH
     };
 }
 
@@ -870,8 +879,8 @@ function getRowParts(tr) {
     if (r.railW > 0) {
         items.push({ type: 'Reling', name: `${baseName} — reling`, w: r.railW, h: height, cabinetQty });
     }
-    if (r.szkloW > 0) {
-        items.push({ type: 'Szkło', name: `${baseName} — szkło`, w: r.szkloW, h: height, cabinetQty });
+    if (r.szkloW > 0 && r.szkloH > 0) {
+        items.push({ type: 'Szkło', name: `${baseName} — szkło`, w: r.szkloW, h: r.szkloH, cabinetQty });
     }
     return items;
 }
