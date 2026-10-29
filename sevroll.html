@@ -834,9 +834,10 @@ function calcRow(ext, runner, height, internal, panelGlass, railGlass) {
     const tyl = tylW > 0 && tylH > 0 ? `${tylW} x ${tylH}` : '—';
 
     const isInternal = internal === 'Tak' && height !== HEIGHT_NO_INTERNAL;
-    // Szerokość szkła: panel TP LW-100, reling YO LW-87 (dla obu typów takie same)
-    const panelReduction = panelGlass === '1' ? 100 : OFFSETS.panel;
-    const railReduction = railGlass === '1' ? 87 : OFFSETS.rail;
+    // Szerokość szkła z listami rozciąganymi: 60mm dla panelu, 50mm dla relingu
+    // Dla stali (list nierozciąganych): 100mm panel, 87mm reling
+    const panelReduction = panelGlass === '1' ? 60 : OFFSETS.panel;
+    const railReduction = railGlass === '1' ? 50 : OFFSETS.rail;
     const panelW = isInternal && intW - panelReduction > 0 ? intW - panelReduction : 0;
     const needsRail = isInternal && height !== HEIGHT_NO_INTERNAL && height !== HEIGHT_PANEL_ONLY;
     const railW = needsRail && intW - railReduction > 0 ? intW - railReduction : 0;
