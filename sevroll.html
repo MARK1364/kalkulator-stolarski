@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sevroll Box 3D — tabela formatek</title>
+    <title>Sevroll Box 3D VR — tabela formatek</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -78,7 +78,7 @@
             box-shadow: 0 2px 12px rgba(61, 58, 54, 0.12);
         }
         .summary-aside {
-            flex: 0 0 380px;
+            flex: 0 0 420px;
             padding: 20px 28px 24px 12px;
             min-height: 0;
             display: flex;
@@ -297,37 +297,13 @@
             color: #2E6B5A;
             padding: 4px 2px;
         }
-        .col-del {
-            width: 34px;
-            text-align: center;
-            background: #eee !important;
-            padding: 0 !important;
-            vertical-align: top;
-        }
-        .cabinet-del-cell { border-left: 1px solid #bbb; }
-        .btn-del-group {
-            background: none;
-            border: none;
-            color: #6E6962;
-            cursor: pointer;
-            width: 100%;
-            min-height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px 2px;
-        }
-        .btn-del-group:hover {
-            background: rgba(61, 58, 54, 0.08);
-            color: #3D3A36;
-        }
-        .btn-del-group svg { width: 15px; height: 15px; display: block; }
-        .col-num { width: 68px; }
+        .col-del { width: 34px; }
         .col-runner { width: 78px; }
         .col-height { width: 68px; }
         .col-yn { width: 62px; }
         .col-out { width: 72px; }
         .col-out-wide { width: 88px; }
+        .col-glass { width: 60px; }
         .sheet-table select:disabled {
             opacity: 0.7;
             cursor: default;
@@ -399,7 +375,7 @@
                 touch-action: pan-x pan-y;
             }
             .sheet-table {
-                min-width: 860px;
+                min-width: 920px;
             }
             .sheet-table thead th {
                 position: sticky;
@@ -450,14 +426,13 @@
                 min-height: 48px;
                 font-size: 16px;
             }
-
         }
     </style>
 </head>
 <body>
 
 <div class="toolbar">
-    <h1><span>Sevroll Box 3D</span> — dno i tyły szuflad</h1>
+    <h1><span>Sevroll Box 3D VR</span> — dno i tyły szuflad</h1>
     <div class="toolbar-actions">
         <button type="button" class="btn btn-clear" id="clearRowsBtn">Wyczyść tabelę</button>
     </div>
@@ -470,9 +445,9 @@
     <table class="sheet-table" id="sevrollTable">
         <thead>
             <tr>
-                <th colspan="7" class="group-title sec-sevroll">Sevroll Box 3D</th>
+                <th colspan="7" class="group-title sec-sevroll">Sevroll Box 3D VR</th>
                 <th colspan="2" class="group-title sec-formatki">Formatki szuflady</th>
-                <th colspan="3" class="group-title sec-wewnetrzne">Wewnętrzne</th>
+                <th colspan="5" class="group-title sec-wewnetrzne">Wewnętrzne</th>
                 <th class="col-del"></th>
             </tr>
             <tr>
@@ -486,7 +461,9 @@
                 <th class="col-header col-out-wide sec-formatki">Tył</th>
                 <th class="col-header col-out-wide sec-formatki">Dno</th>
                 <th class="col-header col-yn sec-wewnetrzne">Tak /<br>Nie</th>
+                <th class="col-header col-glass sec-wewnetrzne">Panel<br>szkło</th>
                 <th class="col-header col-out sec-wewnetrzne">Panel</th>
+                <th class="col-header col-glass sec-wewnetrzne">Reling<br>szkło</th>
                 <th class="col-header col-out sec-wewnetrzne">Reling</th>
                 <th class="col-del"></th>
             </tr>
@@ -555,7 +532,7 @@ const HEIGHT_PANEL_ONLY = 101;
 const RUNNER_OPTIONS = [270, 300, 350, 400, 450, 500, 550];
 const HEIGHT_OPTIONS = [60, 101, 148, 183];
 
-const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 101, internal: 'Nie' };
+const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 101, internal: 'Nie', panelGlass: '0', railGlass: '0' };
 
 const DEFAULT_CABINETS = [
     { name: '', szafek: 1, szuflad: 1, drawers: [{ ...DEFAULT_DRAWER }] }
@@ -619,13 +596,25 @@ function drawerRowHtml(data) {
             <option value="Nie"${d.internal === 'Nie' ? ' selected' : ''}>Nie</option>
             <option value="Tak"${d.internal === 'Tak' ? ' selected' : ''}>Tak</option>
         </select></td>
+        <td class="sec-wewnetrzne">
+            <select class="inp-panel-glass">
+                <option value="0" selected>Stal</option>
+                <option value="1">Szkło</option>
+            </select>
+        </td>
         <td class="sec-wewnetrzne cell-calc out-panel empty">—</td>
+        <td class="sec-wewnetrzne">
+            <select class="inp-rail-glass">
+                <option value="0" selected>Stal</option>
+                <option value="1">Szkło</option>
+            </select>
+        </td>
         <td class="sec-wewnetrzne cell-calc out-reling empty">—</td>
     `;
 }
 
 function bindDrawerRow(tr) {
-    tr.querySelectorAll('.inp-runner, .inp-height, .inp-internal').forEach(el => {
+    tr.querySelectorAll('.inp-runner, .inp-height, .inp-internal, .inp-panel-glass, .inp-rail-glass').forEach(el => {
         el.addEventListener('input', () => updateRow(tr));
         el.addEventListener('change', () => updateRow(tr));
     });
@@ -682,7 +671,6 @@ function createDrawerRow(groupId, isFirst, data, rowspan) {
         const inpExt = tr.querySelector('.inp-ext');
         const inpInt = tr.querySelector('.inp-int');
         
-        // Flaga blokująca rekurencję przy automatycznym przeliczaniu
         let isUpdating = false;
         
         const updateAllGroup = () => {
@@ -690,7 +678,6 @@ function createDrawerRow(groupId, isFirst, data, rowspan) {
             getGroupRows(groupId).forEach(updateRow);
         };
         
-        // Kiedy zmienia się szerokość zewnętrzna - przelicz wewnętrzną
         inpExt.addEventListener('input', () => {
             isUpdating = true;
             const ext = parseFloat(inpExt.value) || 0;
@@ -706,7 +693,6 @@ function createDrawerRow(groupId, isFirst, data, rowspan) {
             updateAllGroup();
         });
         
-        // Kiedy zmienia się szerokość wewnętrzna - przelicz zewnętrzną
         inpInt.addEventListener('input', () => {
             isUpdating = true;
             const intVal = parseFloat(inpInt.value) || 0;
@@ -738,7 +724,9 @@ function getDrawerDataFromRow(tr) {
         ext: parseFloat(first.querySelector('.inp-ext')?.value) || 600,
         runner: parseFloat(tr.querySelector('.inp-runner')?.value) || 500,
         height: parseFloat(tr.querySelector('.inp-height')?.value) || 101,
-        internal: tr.querySelector('.inp-internal')?.value || 'Nie'
+        internal: tr.querySelector('.inp-internal')?.value || 'Nie',
+        panelGlass: tr.querySelector('.inp-panel-glass')?.value || '0',
+        railGlass: tr.querySelector('.inp-rail-glass')?.value || '0'
     };
 }
 
@@ -833,7 +821,7 @@ function addCabinetGroup(data = {}) {
     updateSummary();
 }
 
-function calcRow(ext, runner, height, internal) {
+function calcRow(ext, runner, height, internal, panelGlass, railGlass) {
     const intW = ext - BOARD_OFFSET;
     if (intW <= 0) return null;
 
@@ -846,9 +834,12 @@ function calcRow(ext, runner, height, internal) {
     const tyl = tylW > 0 && tylH > 0 ? `${tylW} x ${tylH}` : '—';
 
     const isInternal = internal === 'Tak' && height !== HEIGHT_NO_INTERNAL;
-    const panelW = isInternal && intW - OFFSETS.panel > 0 ? intW - OFFSETS.panel : 0;
+    // Szerokość szkła: 60mm dla panelu, 50mm dla relingu (mniejsze niż stal)
+    const panelReduction = panelGlass === '1' ? 60 : OFFSETS.panel;
+    const railReduction = railGlass === '1' ? 50 : OFFSETS.rail;
+    const panelW = isInternal && intW - panelReduction > 0 ? intW - panelReduction : 0;
     const needsRail = isInternal && height !== HEIGHT_NO_INTERNAL && height !== HEIGHT_PANEL_ONLY;
-    const railW = needsRail && intW - OFFSETS.rail > 0 ? intW - OFFSETS.rail : 0;
+    const railW = needsRail && intW - railReduction > 0 ? intW - railReduction : 0;
 
     return {
         intW,
@@ -874,7 +865,9 @@ function getRowParts(tr) {
     const runner = parseFloat(tr.querySelector('.inp-runner').value) || 0;
     const height = parseFloat(tr.querySelector('.inp-height').value) || 0;
     const internal = tr.querySelector('.inp-internal').value;
-    const r = calcRow(ext, runner, height, internal);
+    const panelGlass = tr.querySelector('.inp-panel-glass')?.value || '0';
+    const railGlass = tr.querySelector('.inp-rail-glass')?.value || '0';
+    const r = calcRow(ext, runner, height, internal, panelGlass, railGlass);
     if (!r) return [];
 
     const cabinetQty = parseInt(firstRow?.querySelector('.inp-szafek')?.value) || 1;
@@ -885,6 +878,13 @@ function getRowParts(tr) {
     }
     if (r.dnoW > 0 && r.dnoD > 0) {
         items.push({ type: 'Dno', name: `${baseName} — dno`, w: r.dnoW, h: r.dnoD, cabinetQty });
+    }
+    // Dodaj panel jeśli jest aktywny
+    if (panelGlass === '1' && r.panelW > 0) {
+        items.push({ type: 'Panel', name: `${baseName} — panel szkło`, w: r.panelW, h: height, cabinetQty });
+    }
+    if (railGlass === '1' && r.railW > 0) {
+        items.push({ type: 'Reling', name: `${baseName} — reling szkło`, w: r.railW, h: height, cabinetQty });
     }
     return items;
 }
@@ -906,7 +906,7 @@ function aggregateParts(allItems) {
         }
     }
     return Array.from(map.values()).sort((a, b) => {
-        const typeOrder = { Tył: 0, Dno: 1 };
+        const typeOrder = { Tył: 0, Dno: 1, Panel: 2, Reling: 3 };
         const ta = typeOrder[a.type] ?? 9;
         const tb = typeOrder[b.type] ?? 9;
         if (ta !== tb) return ta - tb;
@@ -942,6 +942,8 @@ function updateSummary() {
 
     const tyly = lastSummaryParts.filter(p => p.type === 'Tył').sort(sortBySize);
     const dna = lastSummaryParts.filter(p => p.type === 'Dno').sort(sortBySize);
+    const panele = lastSummaryParts.filter(p => p.type === 'Panel').sort(sortBySize);
+    const relingi = lastSummaryParts.filter(p => p.type === 'Reling').sort(sortBySize);
 
     const emptyEl = document.getElementById('summaryEmpty');
     const tablesWrap = document.getElementById('summaryTablesWrap');
@@ -958,11 +960,34 @@ function updateSummary() {
 
     emptyEl.hidden = true;
     tablesWrap.hidden = false;
-    exportBtn.disabled = false;
-    exportCsvBtn.disabled = false;
 
+    let html = '<div class="summary-block"><h3 class="summary-block-title">Tyły</h3>';
+    html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyTyl"></tbody></table></div></div>';
+    html += '<div class="summary-block"><h3 class="summary-block-title">Dna</h3>';
+    html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyDno"></tbody></table></div></div>';
+    
+    if (panele.length > 0) {
+        html += '<div class="summary-block"><h3 class="summary-block-title">Panele (szkło)</h3>';
+        html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyPanel"></tbody></table></div></div>';
+    }
+    if (relingi.length > 0) {
+        html += '<div class="summary-block"><h3 class="summary-block-title">Relingi (szkło)</h3>';
+        html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyReling"></tbody></table></div></div>';
+    }
+    
+    document.getElementById('summaryListWrap').innerHTML = html + document.getElementById('summaryListWrap').innerHTML.split('</div></div>')[1];
+    
     document.getElementById('summaryBodyTyl').innerHTML = renderSummaryRows(tyly);
     document.getElementById('summaryBodyDno').innerHTML = renderSummaryRows(dna);
+    if (document.getElementById('summaryBodyPanel')) {
+        document.getElementById('summaryBodyPanel').innerHTML = renderSummaryRows(panele);
+    }
+    if (document.getElementById('summaryBodyReling')) {
+        document.getElementById('summaryBodyReling').innerHTML = renderSummaryRows(relingi);
+    }
+
+    exportBtn.disabled = false;
+    exportCsvBtn.disabled = false;
 }
 
 function csvCell(value) {
@@ -976,7 +1001,9 @@ function exportCsv() {
     const lines = ['Typ;Szer mm;Wys mm;Szt'];
     const ordered = [
         ...lastSummaryParts.filter(p => p.type === 'Tył').sort(sortBySize),
-        ...lastSummaryParts.filter(p => p.type === 'Dno').sort(sortBySize)
+        ...lastSummaryParts.filter(p => p.type === 'Dno').sort(sortBySize),
+        ...lastSummaryParts.filter(p => p.type === 'Panel').sort(sortBySize),
+        ...lastSummaryParts.filter(p => p.type === 'Reling').sort(sortBySize)
     ];
     ordered.forEach(p => {
         lines.push([p.type, p.w, p.h, p.qty].map(csvCell).join(';'));
@@ -1028,6 +1055,8 @@ function updateRow(tr) {
     const runner = parseFloat(tr.querySelector('.inp-runner')?.value) || 0;
     const height = parseFloat(tr.querySelector('.inp-height')?.value) || 0;
     const internalSel = tr.querySelector('.inp-internal');
+    const panelGlass = tr.querySelector('.inp-panel-glass')?.value || '0';
+    const railGlass = tr.querySelector('.inp-rail-glass')?.value || '0';
 
     if (height === HEIGHT_NO_INTERNAL) {
         internalSel.value = 'Nie';
@@ -1037,7 +1066,7 @@ function updateRow(tr) {
     }
 
     const internal = internalSel.value;
-    const r = calcRow(ext, runner, height, internal);
+    const r = calcRow(ext, runner, height, internal, panelGlass, railGlass);
 
     const elDno = tr.querySelector('.out-dno');
     const elTyl = tr.querySelector('.out-tyl');
