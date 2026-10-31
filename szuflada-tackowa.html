@@ -415,7 +415,7 @@
                 <th class="col-header col-num sec-tandem">Zew szer<br>korpusu</th>
                 <th class="col-header col-num sec-tandem">Wew szer<br>korpusu</th>
                 <th class="col-header col-runner sec-tandem">Długość<br>prowadnicy</th>
-                <th class="col-header col-height sec-tandem">Wys<br>frontu</th>
+                <th class="col-header col-height sec-tandem">Wys<br>frontu<br>(mm)</th>
                 <th class="col-header col-out-wide sec-formatki">Płyta<br>dolna</th>
                 <th class="col-header col-out-wide sec-formatki">Płyta<br>górna</th>
                 <th class="col-header col-out-wide sec-formatki">Front</th>
@@ -498,9 +498,8 @@ const BOARD_OFFSET = 36;
 const OFFSETS = { dolnaWidth: 50, gornaWidth: 50, depth: 20, frontGap: 4 };
 
 const RUNNER_OPTIONS = [270, 300, 350, 400, 450, 500, 550];
-const HEIGHT_OPTIONS = [90, 131, 178, 213];
 
-const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 131 };
+const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 70 };
 
 const DEFAULT_CABINETS = [
     { name: '', szafek: 1, szuflad: 1, drawers: [{ ...DEFAULT_DRAWER }] }
@@ -532,12 +531,6 @@ function runnerSelect(selected) {
     ).join('');
 }
 
-function heightSelect(selected) {
-    return HEIGHT_OPTIONS.map(v =>
-        `<option value="${v}"${v === selected ? ' selected' : ''}>${v}</option>`
-    ).join('');
-}
-
 function getGroupRows(groupId) {
     return Array.from(document.querySelectorAll(`#tableBody tr[data-group-id="${groupId}"]`));
 }
@@ -557,7 +550,7 @@ function drawerRowHtml(data) {
     const d = { ...defaultDrawer(), ...data };
     return `
         <td class="sec-tandem"><select class="inp-runner">${runnerSelect(d.runner)}</select></td>
-        <td class="sec-tandem"><select class="inp-height">${heightSelect(d.height)}</select></td>
+        <td class="sec-tandem"><input type="number" class="inp-height" value="${d.height}" min="10" step="1"></td>
         <td class="sec-formatki cell-calc out-dolna">—</td>
         <td class="sec-formatki cell-calc out-gorna">—</td>
         <td class="sec-formatki cell-calc out-front">—</td>
@@ -673,7 +666,7 @@ function getDrawerDataFromRow(tr) {
     return {
         ext: parseFloat(first.querySelector('.inp-ext')?.value) || 600,
         runner: parseFloat(tr.querySelector('.inp-runner')?.value) || 500,
-        height: parseFloat(tr.querySelector('.inp-height')?.value) || 131
+        height: parseFloat(tr.querySelector('.inp-height')?.value) || 70
     };
 }
 
