@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Szuflada tandemów Blum — tabela formatek</title>
+    <title>Szuflada tackowa — tabela formatek</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -265,7 +265,8 @@
             text-overflow: ellipsis;
         }
         .cell-calc.out-dolna,
-        .cell-calc.out-gorna { color: #000; }
+        .cell-calc.out-gorna,
+        .cell-calc.out-front { color: #000; }
         .cell-calc.empty { color: #999; font-weight: 400; }
         .cell-calc.muted { color: #555; font-weight: 600; }
         .col-name { width: 110px; max-width: 110px; }
@@ -293,6 +294,7 @@
         }
         .col-del { width: 34px; }
         .col-runner { width: 78px; }
+        .col-height { width: 68px; }
         .col-out-wide { width: 88px; }
         .sheet-table select:disabled {
             opacity: 0.7;
@@ -354,7 +356,7 @@
                 -webkit-overflow-scrolling: touch;
                 touch-action: pan-x pan-y;
             }
-            .sheet-table { min-width: 760px; }
+            .sheet-table { min-width: 840px; }
             .sheet-table thead th { position: sticky; top: 0; z-index: 5; }
             .sheet-table input,
             .sheet-table select {
@@ -390,7 +392,7 @@
 <body>
 
 <div class="toolbar">
-    <h1><span>Szuflada tandemów Blum</span> — płyty szuflad</h1>
+    <h1><span>Szuflada tackowa</span> — płyty i front</h1>
     <div class="toolbar-actions">
         <button type="button" class="btn btn-clear" id="clearRowsBtn">Wyczyść tabelę</button>
     </div>
@@ -402,8 +404,8 @@
     <table class="sheet-table" id="tandemTable">
         <thead>
             <tr>
-                <th colspan="6" class="group-title sec-tandem">Szuflada tandemów Blum</th>
-                <th colspan="2" class="group-title sec-formatki">Formatki</th>
+                <th colspan="7" class="group-title sec-tandem">Szuflada tackowa</th>
+                <th colspan="3" class="group-title sec-formatki">Formatki</th>
                 <th class="col-del"></th>
             </tr>
             <tr>
@@ -413,8 +415,10 @@
                 <th class="col-header col-num sec-tandem">Zew szer<br>korpusu</th>
                 <th class="col-header col-num sec-tandem">Wew szer<br>korpusu</th>
                 <th class="col-header col-runner sec-tandem">Długość<br>prowadnicy</th>
+                <th class="col-header col-height sec-tandem">Wys<br>frontu</th>
                 <th class="col-header col-out-wide sec-formatki">Płyta<br>dolna</th>
                 <th class="col-header col-out-wide sec-formatki">Płyta<br>górna</th>
+                <th class="col-header col-out-wide sec-formatki">Front</th>
                 <th class="col-del"></th>
             </tr>
         </thead>
@@ -462,6 +466,21 @@
                     </table>
                 </div>
             </div>
+            <div class="summary-block">
+                <h3 class="summary-block-title">Fronty</h3>
+                <div class="summary-table-wrap">
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th class="num">Szer</th>
+                                <th class="num">Wys</th>
+                                <th class="num">Szt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryBodyFront"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
     <div class="summary-actions">
@@ -475,12 +494,13 @@
 <script>
 const NESTING_STORAGE_KEY = 'stolarnia_nesting_parts';
 const BOARD_OFFSET = 36;
-// Wzory: szerokość = LW - 50, głębokość = L - 20
-const OFFSETS = { dolnaWidth: 50, gornaWidth: 50, depth: 20 };
+// Wzory: płyty szer = LW - 50, głęb = L - 20; front szer = Zew - 4
+const OFFSETS = { dolnaWidth: 50, gornaWidth: 50, depth: 20, frontGap: 4 };
 
 const RUNNER_OPTIONS = [270, 300, 350, 400, 450, 500, 550];
+const HEIGHT_OPTIONS = [90, 131, 178, 213];
 
-const DEFAULT_DRAWER = { ext: 600, runner: 500 };
+const DEFAULT_DRAWER = { ext: 600, runner: 500, height: 131 };
 
 const DEFAULT_CABINETS = [
     { name: '', szafek: 1, szuflad: 1, drawers: [{ ...DEFAULT_DRAWER }] }
@@ -512,6 +532,12 @@ function runnerSelect(selected) {
     ).join('');
 }
 
+function heightSelect(selected) {
+    return HEIGHT_OPTIONS.map(v =>
+        `<option value="${v}"${v === selected ? ' selected' : ''}>${v}</option>`
+    ).join('');
+}
+
 function getGroupRows(groupId) {
     return Array.from(document.querySelectorAll(`#tableBody tr[data-group-id="${groupId}"]`));
 }
@@ -531,13 +557,15 @@ function drawerRowHtml(data) {
     const d = { ...defaultDrawer(), ...data };
     return `
         <td class="sec-tandem"><select class="inp-runner">${runnerSelect(d.runner)}</select></td>
+        <td class="sec-tandem"><select class="inp-height">${heightSelect(d.height)}</select></td>
         <td class="sec-formatki cell-calc out-dolna">—</td>
         <td class="sec-formatki cell-calc out-gorna">—</td>
+        <td class="sec-formatki cell-calc out-front">—</td>
     `;
 }
 
 function bindDrawerRow(tr) {
-    tr.querySelectorAll('.inp-runner').forEach(el => {
+    tr.querySelectorAll('.inp-runner, .inp-height').forEach(el => {
         el.addEventListener('input', () => updateRow(tr));
         el.addEventListener('change', () => updateRow(tr));
     });
@@ -644,7 +672,8 @@ function getDrawerDataFromRow(tr) {
     const first = getGroupFirstRow(tr.dataset.groupId) || tr;
     return {
         ext: parseFloat(first.querySelector('.inp-ext')?.value) || 600,
-        runner: parseFloat(tr.querySelector('.inp-runner')?.value) || 500
+        runner: parseFloat(tr.querySelector('.inp-runner')?.value) || 500,
+        height: parseFloat(tr.querySelector('.inp-height')?.value) || 131
     };
 }
 
@@ -739,23 +768,29 @@ function addCabinetGroup(data = {}) {
     updateSummary();
 }
 
-function calcRow(ext, runner) {
+function calcRow(ext, runner, height) {
     const intW = ext - BOARD_OFFSET;
     if (intW <= 0) return null;
 
-    // Szerokość = LW - 50, głębokość = L - 20
+    // Płyty: szer = LW - 50, głęb = L - 20
     const dolnaW = intW - OFFSETS.dolnaWidth;
     const gornaW = intW - OFFSETS.gornaWidth;
     const depth = runner - OFFSETS.depth;
 
+    // Front: szer = Zew - 4 (2mm szczeliny z każdej strony), wys = wybrana wysokość
+    const frontW = ext - OFFSETS.frontGap;
+    const frontH = height;
+
     const dolna = dolnaW > 0 && depth > 0 ? `${dolnaW} x ${depth}` : '—';
     const gorna = gornaW > 0 && depth > 0 ? `${gornaW} x ${depth}` : '—';
+    const front = frontW > 0 && frontH > 0 ? `${frontW} x ${frontH}` : '—';
 
     return {
         intW,
         dolna,
         gorna,
-        dolnaW, gornaW, depth
+        front,
+        dolnaW, gornaW, depth, frontW, frontH
     };
 }
 
@@ -771,7 +806,8 @@ function getRowParts(tr) {
     const firstRow = groupRows[0];
     const ext = parseFloat(firstRow?.querySelector('.inp-ext')?.value) || 0;
     const runner = parseFloat(tr.querySelector('.inp-runner').value) || 0;
-    const r = calcRow(ext, runner);
+    const height = parseFloat(tr.querySelector('.inp-height').value) || 0;
+    const r = calcRow(ext, runner, height);
     if (!r) return [];
 
     const cabinetQty = parseInt(firstRow?.querySelector('.inp-szafek')?.value) || 1;
@@ -782,6 +818,9 @@ function getRowParts(tr) {
     }
     if (r.gornaW > 0 && r.depth > 0) {
         items.push({ type: 'Płyta górna', name: `${baseName} — płyta górna`, w: r.gornaW, h: r.depth, cabinetQty });
+    }
+    if (r.frontW > 0 && r.frontH > 0) {
+        items.push({ type: 'Front', name: `${baseName} — front`, w: r.frontW, h: r.frontH, cabinetQty });
     }
     return items;
 }
@@ -803,7 +842,7 @@ function aggregateParts(allItems) {
         }
     }
     return Array.from(map.values()).sort((a, b) => {
-        const typeOrder = { 'Płyta dolna': 0, 'Płyta górna': 1 };
+        const typeOrder = { 'Płyta dolna': 0, 'Płyta górna': 1, 'Front': 2 };
         const ta = typeOrder[a.type] ?? 9;
         const tb = typeOrder[b.type] ?? 9;
         if (ta !== tb) return ta - tb;
@@ -839,6 +878,7 @@ function updateSummary() {
 
     const dolne = lastSummaryParts.filter(p => p.type === 'Płyta dolna').sort(sortBySize);
     const gorne = lastSummaryParts.filter(p => p.type === 'Płyta górna').sort(sortBySize);
+    const fronty = lastSummaryParts.filter(p => p.type === 'Front').sort(sortBySize);
 
     const emptyEl = document.getElementById('summaryEmpty');
     const tablesWrap = document.getElementById('summaryTablesWrap');
@@ -860,6 +900,7 @@ function updateSummary() {
 
     document.getElementById('summaryBodyDolna').innerHTML = renderSummaryRows(dolne);
     document.getElementById('summaryBodyGorna').innerHTML = renderSummaryRows(gorne);
+    document.getElementById('summaryBodyFront').innerHTML = renderSummaryRows(fronty);
 }
 
 function csvCell(value) {
@@ -870,10 +911,11 @@ function csvCell(value) {
 
 function exportCsv() {
     if (!lastSummaryParts.length) return;
-    const lines = ['Typ;Szer mm;Głęb mm;Szt'];
+    const lines = ['Typ;Szer mm;Wys/Głęb mm;Szt'];
     const ordered = [
         ...lastSummaryParts.filter(p => p.type === 'Płyta dolna').sort(sortBySize),
-        ...lastSummaryParts.filter(p => p.type === 'Płyta górna').sort(sortBySize)
+        ...lastSummaryParts.filter(p => p.type === 'Płyta górna').sort(sortBySize),
+        ...lastSummaryParts.filter(p => p.type === 'Front').sort(sortBySize)
     ];
     ordered.forEach(p => {
         lines.push([p.type, p.w, p.h, p.qty].map(csvCell).join(';'));
@@ -883,7 +925,7 @@ function exportCsv() {
     const a = document.createElement('a');
     const date = new Date().toISOString().slice(0, 10);
     a.href = url;
-    a.download = `tandem_formateki_${date}.csv`;
+    a.download = `szuflada_tackowa_formateki_${date}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -923,16 +965,20 @@ function updateRow(tr) {
     const first = getGroupFirstRow(groupId) || tr;
     const ext = parseFloat(first.querySelector('.inp-ext')?.value) || 0;
     const runner = parseFloat(tr.querySelector('.inp-runner')?.value) || 0;
-    const r = calcRow(ext, runner);
+    const height = parseFloat(tr.querySelector('.inp-height')?.value) || 0;
+    const r = calcRow(ext, runner, height);
 
     const elDolna = tr.querySelector('.out-dolna');
     const elGorna = tr.querySelector('.out-gorna');
+    const elFront = tr.querySelector('.out-front');
 
     if (!r) {
         elDolna.textContent = '—';
         elGorna.textContent = '—';
+        elFront.textContent = '—';
         elDolna.classList.add('empty');
         elGorna.classList.add('empty');
+        elFront.classList.add('empty');
         updateSummary();
         return;
     }
@@ -942,6 +988,9 @@ function updateRow(tr) {
 
     elGorna.textContent = r.gorna;
     elGorna.classList.toggle('empty', r.gorna === '—');
+
+    elFront.textContent = r.front;
+    elFront.classList.toggle('empty', r.front === '—');
 
     updateSummary();
 }
