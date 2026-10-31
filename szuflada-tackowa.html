@@ -405,7 +405,7 @@
         <thead>
             <tr>
                 <th colspan="7" class="group-title sec-tandem">Szuflada tackowa</th>
-                <th colspan="3" class="group-title sec-formatki">Formatki</th>
+                <th colspan="4" class="group-title sec-formatki">Formatki</th>
                 <th class="col-del"></th>
             </tr>
             <tr>
@@ -419,6 +419,7 @@
                 <th class="col-header col-out-wide sec-formatki">Płyta<br>dolna</th>
                 <th class="col-header col-out-wide sec-formatki">Płyta<br>górna</th>
                 <th class="col-header col-out-wide sec-formatki">Front</th>
+                <th class="col-header col-out sec-formatki">Rurka</th>
                 <th class="col-del"></th>
             </tr>
         </thead>
@@ -481,6 +482,21 @@
                     </table>
                 </div>
             </div>
+            <div class="summary-block">
+                <h3 class="summary-block-title">Rurki</h3>
+                <div class="summary-table-wrap">
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th class="num">Szer</th>
+                                <th class="num">&nbsp;</th>
+                                <th class="num">Szt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryBodyRurka"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
     <div class="summary-actions">
@@ -495,7 +511,7 @@
 const NESTING_STORAGE_KEY = 'stolarnia_nesting_parts';
 const BOARD_OFFSET = 36;
 // Wzory: płyty szer = LW - 50, głęb = L - 20; front szer = Zew - 4
-const OFFSETS = { dolnaWidth: 50, gornaWidth: 50, depth: 20, frontGap: 4 };
+const OFFSETS = { dolnaWidth: 50, gornaWidth: 50, depth: 20, frontGap: 4, rurka: 100 };
 
 const RUNNER_OPTIONS = [270, 300, 350, 400, 450, 500, 550];
 
@@ -554,6 +570,7 @@ function drawerRowHtml(data) {
         <td class="sec-formatki cell-calc out-dolna">—</td>
         <td class="sec-formatki cell-calc out-gorna">—</td>
         <td class="sec-formatki cell-calc out-front">—</td>
+        <td class="sec-formatki cell-calc out-rurka">—</td>
     `;
 }
 
@@ -774,16 +791,21 @@ function calcRow(ext, runner, height) {
     const frontW = ext - OFFSETS.frontGap;
     const frontH = height;
 
+    // Rurka: szer = LW - 100
+    const rurkaW = intW - OFFSETS.rurka;
+
     const dolna = dolnaW > 0 && depth > 0 ? `${dolnaW} x ${depth}` : '—';
     const gorna = gornaW > 0 && depth > 0 ? `${gornaW} x ${depth}` : '—';
     const front = frontW > 0 && frontH > 0 ? `${frontW} x ${frontH}` : '—';
+    const rurka = rurkaW > 0 ? String(rurkaW) : '';
 
     return {
         intW,
         dolna,
         gorna,
         front,
-        dolnaW, gornaW, depth, frontW, frontH
+        rurka,
+        dolnaW, gornaW, depth, frontW, frontH, rurkaW
     };
 }
 
@@ -815,6 +837,9 @@ function getRowParts(tr) {
     if (r.frontW > 0 && r.frontH > 0) {
         items.push({ type: 'Front', name: `${baseName} — front`, w: r.frontW, h: r.frontH, cabinetQty });
     }
+    if (r.rurkaW > 0) {
+        items.push({ type: 'Rurka', name: `${baseName} — rurka`, w: r.rurkaW, h: 0, cabinetQty });
+    }
     return items;
 }
 
@@ -835,7 +860,7 @@ function aggregateParts(allItems) {
         }
     }
     return Array.from(map.values()).sort((a, b) => {
-        const typeOrder = { 'Płyta dolna': 0, 'Płyta górna': 1, 'Front': 2 };
+        const typeOrder = { 'Płyta dolna': 0, 'Płyta górna': 1, 'Front': 2, 'Rurka': 3 };
         const ta = typeOrder[a.type] ?? 9;
         const tb = typeOrder[b.type] ?? 9;
         if (ta !== tb) return ta - tb;
@@ -872,6 +897,7 @@ function updateSummary() {
     const dolne = lastSummaryParts.filter(p => p.type === 'Płyta dolna').sort(sortBySize);
     const gorne = lastSummaryParts.filter(p => p.type === 'Płyta górna').sort(sortBySize);
     const fronty = lastSummaryParts.filter(p => p.type === 'Front').sort(sortBySize);
+    const rurki = lastSummaryParts.filter(p => p.type === 'Rurka').sort(sortBySize);
 
     const emptyEl = document.getElementById('summaryEmpty');
     const tablesWrap = document.getElementById('summaryTablesWrap');
@@ -894,6 +920,7 @@ function updateSummary() {
     document.getElementById('summaryBodyDolna').innerHTML = renderSummaryRows(dolne);
     document.getElementById('summaryBodyGorna').innerHTML = renderSummaryRows(gorne);
     document.getElementById('summaryBodyFront').innerHTML = renderSummaryRows(fronty);
+    document.getElementById('summaryBodyRurka').innerHTML = renderSummaryRows(rurki);
 }
 
 function csvCell(value) {
@@ -908,7 +935,8 @@ function exportCsv() {
     const ordered = [
         ...lastSummaryParts.filter(p => p.type === 'Płyta dolna').sort(sortBySize),
         ...lastSummaryParts.filter(p => p.type === 'Płyta górna').sort(sortBySize),
-        ...lastSummaryParts.filter(p => p.type === 'Front').sort(sortBySize)
+        ...lastSummaryParts.filter(p => p.type === 'Front').sort(sortBySize),
+        ...lastSummaryParts.filter(p => p.type === 'Rurka').sort(sortBySize)
     ];
     ordered.forEach(p => {
         lines.push([p.type, p.w, p.h, p.qty].map(csvCell).join(';'));
@@ -964,14 +992,17 @@ function updateRow(tr) {
     const elDolna = tr.querySelector('.out-dolna');
     const elGorna = tr.querySelector('.out-gorna');
     const elFront = tr.querySelector('.out-front');
+    const elRurka = tr.querySelector('.out-rurka');
 
     if (!r) {
         elDolna.textContent = '—';
         elGorna.textContent = '—';
         elFront.textContent = '—';
+        elRurka.textContent = '—';
         elDolna.classList.add('empty');
         elGorna.classList.add('empty');
         elFront.classList.add('empty');
+        elRurka.classList.add('empty');
         updateSummary();
         return;
     }
@@ -984,6 +1015,9 @@ function updateRow(tr) {
 
     elFront.textContent = r.front;
     elFront.classList.toggle('empty', r.front === '—');
+
+    elRurka.textContent = r.rurka || '—';
+    elRurka.classList.toggle('empty', !r.rurka);
 
     updateSummary();
 }
