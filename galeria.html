@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Galeria warsztatu</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #E8E4DD;
+            color: #3D3A36;
+            font-size: 17px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .toolbar {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 32px;
+            background: #D8D3CB;
+            border-bottom: 1px solid #C4BFB6;
+            flex-wrap: wrap;
+        }
+        .toolbar h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3D3A36;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toolbar h1 span { color: #2E6B5A; }
+        .toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-add { background: #2E6B5A; color: #fff; }
+        .btn-add:hover { filter: brightness(1.08); }
+        .btn-clear { background: #F4F1EB; color: #5A5550; border: 1px solid #C9C4BB; }
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #C9C4BB;
+            border-radius: 6px;
+            font-size: 15px;
+            font-family: inherit;
+            background: #F4F1EB;
+            color: #3D3A36;
+            cursor: pointer;
+        }
+
+        .gallery-wrap {
+            flex: 1;
+            overflow: auto;
+            padding: 20px 32px;
+            min-height: 0;
+        }
+
+        /* Drop zone */
+        .drop-zone {
+            border: 3px dashed #C9C4BB;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            color: #6E6962;
+            font-size: 18px;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: #F4F1EB;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #2E6B5A;
+            background: #E8F3EF;
+            color: #2E6B5A;
+        }
+        .drop-zone p { margin-top: 8px; font-size: 14px; }
+
+        /* Gallery grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .photo-card {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(61, 58, 54, 0.12);
+            transition: transform 0.15s, box-shadow 0.15s;
+            display: flex;
+            flex-direction: column;
+        }
+        .photo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(61, 58, 54, 0.2);
+        }
+        .photo-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            cursor: pointer;
+            display: block;
+            background: #f0f0f0;
+        }
+        .photo-info {
+            padding: 10px 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .photo-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #3D3A36;
+            word-break: break-word;
+        }
+        .photo-desc {
+            font-size: 13px;
+            color: #6E6962;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .photo-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 6px;
+        }
+        .photo-date {
+            font-size: 12px;
+            color: #9A9590;
+        }
+        .photo-cat {
+            font-size: 11px;
+            font-weight: 600;
+            color: #2E6B5A;
+            background: #E8F3EF;
+            padding: 2px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+        .photo-del {
+            background: #f0d4d4;
+            border: 1px solid #c88;
+            color: #a44;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 3px 8px;
+            font-family: inherit;
+        }
+        .photo-del:hover { background: #e8b4b4; }
+
+        .empty-msg {
+            text-align: center;
+            color: #9A9590;
+            font-size: 18px;
+            padding: 60px 20px;
+        }
+
+        /* Modal — pełny obraz */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        .modal.active { display: flex; }
+        .modal img {
+            max-width: 90%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 24px;
+            background: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            text-align: center;
+            max-width: 80%;
+        }
+        .modal-info h3 { font-size: 18px; margin-bottom: 4px; }
+        .modal-info p { font-size: 14px; opacity: 0.8; }
+
+        /* Upload dialog */
+        .upload-dialog {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 900;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .upload-dialog.active { display: flex; }
+        .upload-card {
+            background: #F4F1EB;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: auto;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+        }
+        .upload-card h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #2E6B5A;
+        }
+        .upload-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: #fff;
+            border: 1px solid #ddd;
+        }
+        .upload-field { margin-bottom: 12px; }
+        .upload-field label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #5A5550;
+        }
+        .upload-field input,
+        .upload-field select,
+        .upload-field textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #C9C4BB;
+            border-radius: 6px;
+            font-size: 15px;
+            font-family: inherit;
+            background: #fff;
+        }
+        .upload-field textarea { resize: vertical; min-height: 60px; }
+        .upload-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .upload-buttons .btn { flex: 1; }
+        .btn-save { background: #2E6B5A; color: #fff; }
+        .btn-cancel { background: #F4F1EB; color: #5A5550; border: 1px solid #C9C4BB; }
+
+        @media (max-width: 768px) {
+            body { overflow: auto; font-size: 16px; }
+            .toolbar { padding: 10px 12px; flex-direction: column; align-items: stretch; }
+            .toolbar h1 { font-size: 17px; }
+            .toolbar-actions { width: 100%; }
+            .btn { min-height: 44px; font-size: 16px; }
+            .gallery-wrap { padding: 12px; }
+            .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+            .photo-card img { height: 130px; }
+            .drop-zone { padding: 24px 12px; font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <h1><span>Galeria</span> warsztatu</h1>
+    <div class="toolbar-actions">
+        <select class="filter-select" id="categoryFilter">
+            <option value="">Wszystkie kategorie</option>
+            <option value="Szuflady">Szuflady</option>
+            <option value="Drzwi">Drzwi</option>
+            <option value="Fronty">Fronty</option>
+            <option value="Korpusy">Korpusy</option>
+            <option value="Inne">Inne</option>
+        </select>
+        <button type="button" class="btn btn-add" id="addBtn">+ Dodaj zdjęcie</button>
+    </div>
+</div>
+
+<div class="gallery-wrap">
+    <div class="drop-zone" id="dropZone">
+        📷 Przeciągnij zdjęcia tutaj lub kliknij, aby wybrać
+        <p>Formaty: JPG, PNG, WebP, GIF</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+
+    <div id="galleryContent">
+        <p class="empty-msg" id="emptyMsg">Brak zdjęć. Dodaj pierwsze zdjęcie z warsztatu!</p>
+        <div class="gallery-grid" id="galleryGrid"></div>
+    </div>
+</div>
+
+<!-- Modal podglądu -->
+<div class="modal" id="modal">
+    <button class="modal-close" id="modalClose">✕</button>
+    <img id="modalImg" src="" alt="">
+    <div class="modal-info">
+        <h3 id="modalTitle"></h3>
+        <p id="modalDesc"></p>
+    </div>
+</div>
+
+<!-- Dialog dodawania -->
+<div class="upload-dialog" id="uploadDialog">
+    <div class="upload-card">
+        <h2 id="uploadTitle">Dodaj zdjęcie</h2>
+        <img class="upload-preview" id="uploadPreview" src="" alt="">
+        <div class="upload-field">
+            <label>Tytuł</label>
+            <input type="text" id="uploadTitleField" placeholder="np. Szuflada tackowa 600mm" maxlength="80">
+        </div>
+        <div class="upload-field">
+            <label>Opis (opcjonalnie)</label>
+            <textarea id="uploadDesc" placeholder="Jak to zrobiłeś, wymiary, uwagi..." maxlength="500"></textarea>
+        </div>
+        <div class="upload-field">
+            <label>Kategoria</label>
+            <select id="uploadCategory">
+                <option value="Szuflady">Szuflady</option>
+                <option value="Drzwi">Drzwi</option>
+                <option value="Fronty">Fronty</option>
+                <option value="Korpusy">Korpusy</option>
+                <option value="Inne">Inne</option>
+            </select>
+        </div>
+        <div class="upload-buttons">
+            <button type="button" class="btn btn-cancel" id="uploadCancel">Anuluj</button>
+            <button type="button" class="btn btn-save" id="uploadSave">Zapisz</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ═══ IndexedDB ═══
+const DB_NAME = 'stolarnia_galeria';
+const DB_VERSION = 1;
+const STORE_NAME = 'photos';
+let db = null;
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains(STORE_NAME)) {
+                const store = d.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                store.createIndex('category', 'category', { unique: false });
+                store.createIndex('date', 'date', { unique: false });
+            }
+        };
+        req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+        req.onerror = (e) => reject(e.target.error);
+    });
+}
+
+function addPhoto(photo) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([STORE_NAME], 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.add(photo);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+function deletePhoto(id) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([STORE_NAME], 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+    });
+}
+
+function getAllPhotos() {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([STORE_NAME], 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+// ═══ State ═══
+let pendingFiles = []; // pliki czekające na opisanie
+let pendingIndex = 0;
+let currentPhotos = [];
+
+// ═══ UI ═══
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const galleryGrid = document.getElementById('galleryGrid');
+const emptyMsg = document.getElementById('emptyMsg');
+const categoryFilter = document.getElementById('categoryFilter');
+const modal = document.getElementById('modal');
+const modalImg = document.getElementById('modalImg');
+const modalTitle = document.getElementById('modalTitle');
+const modalDesc = document.getElementById('modalDesc');
+const uploadDialog = document.getElementById('uploadDialog');
+const uploadPreview = document.getElementById('uploadPreview');
+const uploadTitleField = document.getElementById('uploadTitleField');
+const uploadDesc = document.getElementById('uploadDesc');
+const uploadCategory = document.getElementById('uploadCategory');
+
+// Drop zone
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => {
+    handleFiles(Array.from(e.target.files));
+    fileInput.value = '';
+});
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    handleFiles(files);
+});
+
+function handleFiles(files) {
+    if (!files.length) return;
+    pendingFiles = files;
+    pendingIndex = 0;
+    showUploadDialog();
+}
+
+function showUploadDialog() {
+    if (pendingIndex >= pendingFiles.length) {
+        uploadDialog.classList.remove('active');
+        pendingFiles = [];
+        refreshGallery();
+        return;
+    }
+    const file = pendingFiles[pendingIndex];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        uploadPreview.src = e.target.result;
+        uploadTitleField.value = file.name.replace(/\.[^.]+$/, '').slice(0, 80);
+        uploadDesc.value = '';
+        uploadCategory.value = 'Szuflady';
+        document.getElementById('uploadTitle').textContent =
+            `Zdjęcie ${pendingIndex + 1} z ${pendingFiles.length}`;
+        uploadDialog.classList.add('active');
+    };
+    reader.readAsDataURL(file);
+}
+
+document.getElementById('uploadSave').addEventListener('click', async () => {
+    const file = pendingFiles[pendingIndex];
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const photo = {
+            id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            title: uploadTitleField.value.trim() || 'Bez tytułu',
+            desc: uploadDesc.value.trim(),
+            category: uploadCategory.value,
+            date: new Date().toISOString(),
+            data: e.target.result // base64 data URL
+        };
+        try {
+            await addPhoto(photo);
+            pendingIndex++;
+            showUploadDialog();
+        } catch (err) {
+            alert('Błąd zapisu: ' + err.message);
+        }
+    };
+    reader.readAsDataURL(file);
+});
+
+document.getElementById('uploadCancel').addEventListener('click', () => {
+    pendingFiles = [];
+    pendingIndex = 0;
+    uploadDialog.classList.remove('active');
+});
+
+// Add button
+document.getElementById('addBtn').addEventListener('click', () => fileInput.click());
+
+// Modal
+document.getElementById('modalClose').addEventListener('click', () => modal.classList.remove('active'));
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+});
+
+// Category filter
+categoryFilter.addEventListener('change', refreshGallery);
+
+// Gallery render
+async function refreshGallery() {
+    const photos = await getAllPhotos();
+    currentPhotos = photos;
+    const filter = categoryFilter.value;
+    const filtered = filter ? photos.filter(p => p.category === filter) : photos;
+
+    if (!filtered.length) {
+        emptyMsg.style.display = 'block';
+        galleryGrid.innerHTML = '';
+        return;
+    }
+    emptyMsg.style.display = 'none';
+
+    // Sort by date desc
+    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    galleryGrid.innerHTML = filtered.map(p => `
+        <div class="photo-card" data-id="${p.id}">
+            <img src="${p.data}" alt="${escapeHtml(p.title)}" loading="lazy">
+            <div class="photo-info">
+                <div class="photo-title">${escapeHtml(p.title)}</div>
+                ${p.desc ? `<div class="photo-desc">${escapeHtml(p.desc)}</div>` : ''}
+                <div class="photo-meta">
+                    <span class="photo-date">${formatDate(p.date)}</span>
+                    <span class="photo-cat">${escapeHtml(p.category)}</span>
+                </div>
+                <button class="photo-del" data-id="${p.id}" style="align-self: flex-start; margin-top: 6px;">Usuń</button>
+            </div>
+        </div>
+    `).join('');
+
+    // Click to view
+    galleryGrid.querySelectorAll('.photo-card img').forEach(img => {
+        img.addEventListener('click', () => {
+            const card = img.closest('.photo-card');
+            const photo = filtered.find(p => p.id === card.dataset.id);
+            if (!photo) return;
+            modalImg.src = photo.data;
+            modalTitle.textContent = photo.title;
+            modalDesc.textContent = photo.desc || '';
+            modal.classList.add('active');
+        });
+    });
+
+    // Delete
+    galleryGrid.querySelectorAll('.photo-del').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!confirm('Usunąć to zdjęcie?')) return;
+            await deletePhoto(btn.dataset.id);
+            refreshGallery();
+        });
+    });
+}
+
+function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s || '';
+    return div.innerHTML;
+}
+
+function formatDate(iso) {
+    const d = new Date(iso);
+    const pad = v => String(v).padStart(2, '0');
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+}
+
+// Init
+openDB().then(() => refreshGallery()).catch(err => {
+    emptyMsg.textContent = 'Błąd bazy danych: ' + err.message;
+});
+</script>
+</body>
+</html>

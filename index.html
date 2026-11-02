@@ -212,6 +212,7 @@
         <button class="sub-tab" data-calc="rogowa-prosta">Rogowa prosta</button>
         <button class="sub-tab" data-calc="aventos">Aventos</button>
         <button class="sub-tab" data-calc="tandem">Tackowa</button>
+        <button class="sub-tab" data-calc="galeria">Galeria</button>
     </div>
 </header>
 
@@ -229,6 +230,7 @@
             <iframe id="frame-rogowa-prosta" src="rogowa-prosta.html" title="Szafka narożna prosta"></iframe>
             <iframe id="frame-aventos" src="aventos.html" title="Blum Aventos — siłowniki"></iframe>
             <iframe id="frame-tandem" src="szuflada-tackowa.html" title="Szuflada tackowa — płyty i front"></iframe>
+            <iframe id="frame-galeria" src="galeria.html" title="Galeria warsztatu"></iframe>
         </div>
     </section>
     <section class="panel" id="panel-render">
@@ -284,7 +286,7 @@
         const [main, sub] = hash.split('/');
         const valid = ['kalkulator', 'render', 'harmonogram'];
         switchMain(valid.includes(main) ? main : 'kalkulator');
-        if (main === 'kalkulator' && ['giecie', 'lamele', 'polki', 'nesting', 'antaro', 'sevroll', 'merivo', 'rogowa', 'rogowa-prosta', 'aventos', 'tandem'].includes(sub)) {
+        if (main === 'kalkulator' && ['giecie', 'lamele', 'polki', 'nesting', 'antaro', 'sevroll', 'merivo', 'rogowa', 'rogowa-prosta', 'aventos', 'tandem', 'galeria'].includes(sub)) {
             switchCalc(sub);
         }
     }
