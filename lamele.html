@@ -470,6 +470,17 @@
                             <span class="calc-result" id="baseBoardCostResult">0 PLN</span>
                         </div>
                     </div>
+                    <div class="calc-row">
+                        <div class="calc-row-label">Cięcie</div>
+                        <div class="calc-row-value">
+                            (<span class="calc-qty" id="cutQty">0 szt</span>)
+                            <span class="calc-unit">×</span>
+                            <input type="number" id="cutPrice" value="1.1" step="0.1" min="0" oninput="calculateCosts()">
+                            <span class="calc-unit">PLN/szt</span>
+                            <span class="calc-eq">=</span>
+                            <span class="calc-result" id="cutCostResult">0 PLN</span>
+                        </div>
+                    </div>
                     <div class="calc-total-row">
                         <span>SUMA</span>
                         <span id="totalCostResult">0 PLN</span>
@@ -949,6 +960,7 @@
         const boardH = state.boardH ?? (parseFloat(document.getElementById('boardH').value) || 0);
         const boardW = state.boardW ?? (parseFloat(document.getElementById('boardW').value) || 0);
         const baseBoardPrice = parseFloat(document.getElementById('baseBoardPrice').value) || 0;
+        const cutPrice = parseFloat(document.getElementById('cutPrice').value) || 0;
 
         const edgeMb = (count * boardH) / 1000;
         const lamelArea = (count * lamelWidth * boardH) / 1000000;
@@ -957,15 +969,18 @@
         const edgeCost = edgeMb * edgePrice;
         const lamelBoardCost = lamelArea * boardPrice;
         const baseBoardCost = baseArea * baseBoardPrice;
-        const total = edgeCost + lamelBoardCost + baseBoardCost;
+        const cutCost = count * cutPrice;
+        const total = edgeCost + lamelBoardCost + baseBoardCost + cutCost;
 
         document.getElementById('edgeMbQty').textContent = fmtPl(edgeMb, 1) + ' mb';
         document.getElementById('lamelAreaQty').textContent = fmtPl(lamelArea, 2) + ' m²';
         document.getElementById('baseAreaQty').textContent = fmtPl(baseArea, 2) + ' m²';
+        document.getElementById('cutQty').textContent = count + ' szt';
 
         document.getElementById('edgeCostResult').textContent = fmtPln(edgeCost);
         document.getElementById('boardCostResult').textContent = fmtPln(lamelBoardCost);
         document.getElementById('baseBoardCostResult').textContent = fmtPln(baseBoardCost);
+        document.getElementById('cutCostResult').textContent = fmtPln(cutCost);
         document.getElementById('totalCostResult').textContent = fmtPln(total);
     }
 
