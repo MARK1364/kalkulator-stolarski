@@ -202,6 +202,37 @@
       pointer-events: none;
     }
 
+    /* === MOBILE === */
+    @media (max-width: 768px) {
+      html { height: auto; }
+      body {
+        height: auto;
+        min-height: 100dvh;
+        overflow-y: auto;
+        user-select: auto;
+        -webkit-user-select: auto;
+      }
+      .svg-wrap {
+        flex: none;
+        overflow: visible;
+      }
+      .svg-container {
+        max-width: 100%;
+        max-height: 60vh;
+      }
+      .svg-container svg {
+        max-width: 100%;
+        max-height: 60vh;
+      }
+      .dim-editor {
+        min-width: 140px;
+        padding: 8px 10px;
+        gap: 6px;
+      }
+      .dim-editor input { height: 36px; font-size: 16px; }
+      .dim-editable text { font-size: 50px !important; }
+    }
+
   </style>
 </head>
 <body>
