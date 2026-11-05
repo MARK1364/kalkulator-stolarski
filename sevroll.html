@@ -942,27 +942,25 @@ function updateSummary() {
     const relingi = lastSummaryParts.filter(p => p.type === 'Reling').sort(sortBySize);
     const szkla = lastSummaryParts.filter(p => p.type === 'Szkło').sort(sortBySize);
 
-    const emptyEl = document.getElementById('summaryEmpty');
-    const tablesWrap = document.getElementById('summaryTablesWrap');
     const exportBtn = document.getElementById('exportNestingBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const summaryListWrap = document.getElementById('summaryListWrap');
 
     if (!lastSummaryParts.length) {
-        emptyEl.hidden = false;
-        tablesWrap.hidden = true;
-        exportBtn.disabled = true;
-        exportCsvBtn.disabled = true;
+        summaryListWrap.innerHTML =
+            '<p class="summary-empty" id="summaryEmpty">Brak formatek do wyświetlenia.</p>' +
+            '<div id="summaryTablesWrap" hidden></div>';
+        if (exportBtn) exportBtn.disabled = true;
+        if (exportCsvBtn) exportCsvBtn.disabled = true;
         return;
     }
 
-    emptyEl.hidden = true;
-    tablesWrap.hidden = false;
-
-    let html = '<div class="summary-block"><h3 class="summary-block-title">Tyły</h3>';
+    let html = '<div id="summaryTablesWrap">';
+    html += '<div class="summary-block"><h3 class="summary-block-title">Tyły</h3>';
     html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyTyl"></tbody></table></div></div>';
     html += '<div class="summary-block"><h3 class="summary-block-title">Dna</h3>';
     html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyDno"></tbody></table></div></div>';
-    
+
     if (panele.length > 0) {
         html += '<div class="summary-block"><h3 class="summary-block-title">Panele</h3>';
         html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodyPanel"></tbody></table></div></div>';
@@ -975,9 +973,10 @@ function updateSummary() {
         html += '<div class="summary-block"><h3 class="summary-block-title">Szkła</h3>';
         html += '<div class="summary-table-wrap"><table class="summary-table"><thead><tr><th class="num">Szer</th><th class="num">Wys</th><th class="num">Szt</th></tr></thead><tbody id="summaryBodySzklo"></tbody></table></div></div>';
     }
-    
-    document.getElementById('summaryListWrap').innerHTML = html;
-    
+    html += '</div>';
+
+    summaryListWrap.innerHTML = html;
+
     document.getElementById('summaryBodyTyl').innerHTML = renderSummaryRows(tyly);
     document.getElementById('summaryBodyDno').innerHTML = renderSummaryRows(dna);
     if (document.getElementById('summaryBodyPanel')) {
@@ -990,8 +989,8 @@ function updateSummary() {
         document.getElementById('summaryBodySzklo').innerHTML = renderSummaryRows(szkla);
     }
 
-    exportBtn.disabled = false;
-    exportCsvBtn.disabled = false;
+    if (exportBtn) exportBtn.disabled = false;
+    if (exportCsvBtn) exportCsvBtn.disabled = false;
 }
 
 function csvCell(value) {
