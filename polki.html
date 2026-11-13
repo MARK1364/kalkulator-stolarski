@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23D8D3CB' rx='12'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-size='32' font-weight='800' font-family='sans-serif' fill='%235C4F72'%3ESP%3C/text%3E%3C/svg%3E">
-    <title>Kalkulator Półek</title>
+    <title>Kalkulator półek</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -48,37 +47,19 @@
             cursor: pointer;
             pointer-events: all;
         }
-        .dim-editable.dim-height .dim-hit {
-            fill: rgba(16, 185, 129, 0.42);
-            stroke: #10b981;
-            stroke-width: 4.5;
-            opacity: 1;
-            animation: shelvesPulse 2.5s ease-in-out infinite;
-        }
-        .dim-editable.dim-height:hover .dim-hit {
-            fill: rgba(16, 185, 129, 0.5);
-            opacity: 1;
-            stroke: #34d399;
-            stroke-width: 5;
-        }
-        .dim-editable.dim-height text {
-            fill: #ffffff;
-            font-weight: 800;
-        }
         .dim-editable.dim-green-badge { cursor: pointer; }
         .dim-editable.dim-green-badge .dim-badge-ring {
             fill: rgba(16, 185, 129, 0.38);
             stroke: #10b981;
             stroke-width: 5;
-            animation: shelvesPulse 2.5s ease-in-out infinite;
             pointer-events: all;
             cursor: pointer;
+            transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
         }
         .dim-editable.dim-green-badge:hover .dim-badge-ring {
             fill: rgba(16, 185, 129, 0.55);
             stroke: #34d399;
             stroke-width: 6;
-            animation-play-state: paused;
         }
         .dim-editable.dim-green-badge .dim-badge-num {
             fill: #ffffff;
@@ -89,45 +70,6 @@
             fill: #d1fae5;
             font-weight: 600;
             pointer-events: none;
-        }
-        @keyframes shelvesPulse {
-            0%, 100% {
-                fill: rgba(16, 185, 129, 0.28);
-                stroke-width: 4.5;
-            }
-            50% {
-                fill: rgba(16, 185, 129, 0.52);
-                stroke-width: 6;
-            }
-        }
-        .dim-editable .dim-hit {
-            fill: rgba(122, 107, 143, 0.14);
-            stroke: #9B8BB5;
-            stroke-width: 3.5;
-            rx: 5;
-            opacity: 0.55;
-            animation: dimPulse 2.8s ease-in-out infinite;
-            pointer-events: all;
-            cursor: pointer;
-        }
-        .dim-editable:hover .dim-hit {
-            fill: rgba(122, 107, 143, 0.3);
-            opacity: 1;
-            stroke: #7A6B8F;
-            stroke-width: 4.5;
-            animation-play-state: paused;
-        }
-        @keyframes dimPulse {
-            0%, 100% {
-                opacity: 0.35;
-                stroke-width: 2.5;
-                fill: rgba(122, 107, 143, 0.1);
-            }
-            50% {
-                opacity: 0.95;
-                stroke-width: 4.5;
-                fill: rgba(122, 107, 143, 0.26);
-            }
         }
         .dim-editable text { pointer-events: none; }
         .dim-editor {
@@ -153,6 +95,9 @@
             height: 38px;
             font-size: 18px;
             font-weight: 600;
+            padding: 0 8px;
+            border: 1px solid #C9C4BB;
+            border-radius: 4px;
         }
         .dim-editor-actions {
             display: flex;
@@ -175,7 +120,34 @@
         @media (max-width: 768px) {
             body { overflow: auto; -webkit-text-size-adjust: 100%; }
             .container { flex-direction: column; height: auto; min-height: 100%; padding: 10px; }
-            .svg-container { min-height: 320px; height: 50vh; }
+            .svg-container { min-height: 320px; height: 90vh; }
+        }
+        .dim-ref-toggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 20;
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+            background: rgba(240, 237, 231, 0.96);
+            border: 1px solid #C9C4BB;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .dim-ref-toggle button {
+            border: 0;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            background: transparent;
+            color: #5C5550;
+        }
+        .dim-ref-toggle button.active {
+            background: #5C4F72;
+            color: #fff;
         }
     </style>
 </head>
@@ -191,6 +163,10 @@
     </div>
 
     <div class="svg-container" id="svgContainer">
+        <div class="dim-ref-toggle" role="group" aria-label="Baza wymiarów">
+            <button type="button" id="dimRefZew" class="active" title="Wymiary od zewnątrz (od dołu szafki)">ZEW</button>
+            <button type="button" id="dimRefWew" class="" title="Wymiary od środka (od górnej krawędzi dolnego wieńca)">WEW</button>
+        </div>
         <svg id="svg"></svg>
         <div id="dimEditor" class="dim-editor" hidden>
             <label id="dimEditorLabel" for="dimEditorInput">Wymiar</label>
@@ -215,7 +191,7 @@ const EDITABLE_DIMS = {
 };
 
 let dimEditorField = null;
-let pulseIndex = 0;
+let dimRefMode = 'zew';
 
 function isDimUiTarget(node) {
     while (node && node !== document) {
@@ -226,7 +202,7 @@ function isDimUiTarget(node) {
     return false;
 }
 
-function updateViewBox(svgId, padX = 14, padY = 6) {
+function updateViewBox(svgId, padX = 14, padY = 10) {
     const svg = document.getElementById(svgId);
     const bbox = svg.getBBox();
     const viewBox = `${bbox.x - padX} ${bbox.y - padY} ${bbox.width + padX * 2} ${bbox.height + padY * 2}`;
@@ -286,40 +262,6 @@ function commitDimEditor() {
     formInput.value = String(value);
     closeDimEditor();
     draw();
-}
-
-function clientToSvg(svg, clientX, clientY) {
-    const pt = svg.createSVGPoint();
-    pt.x = clientX;
-    pt.y = clientY;
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return { x: clientX, y: clientY };
-    return pt.matrixTransform(ctm.inverse());
-}
-
-function placeHitRectFromElement(svg, rect, el, padX, padY) {
-    const box = el.getBoundingClientRect();
-    if (box.width < 1 && box.height < 1) return false;
-    const tl = clientToSvg(svg, box.left, box.top);
-    const br = clientToSvg(svg, box.right, box.bottom);
-    const x = Math.min(tl.x, br.x) - padX;
-    const y = Math.min(tl.y, br.y) - padY;
-    rect.setAttribute('x', x);
-    rect.setAttribute('y', y);
-    rect.setAttribute('width', Math.abs(br.x - tl.x) + padX * 2);
-    rect.setAttribute('height', Math.abs(br.y - tl.y) + padY * 2);
-    return true;
-}
-
-function syncAllDimHitRects(svg) {
-    svg.querySelectorAll('.dim-editable:not(.dim-green-badge)').forEach(g => {
-        const text = g.querySelector('text');
-        const rect = g.querySelector('.dim-hit');
-        if (!text || !rect) return;
-        const padX = parseFloat(g.dataset.hitPadX || '10');
-        const padY = parseFloat(g.dataset.hitPadY || '8');
-        placeHitRectFromElement(svg, rect, text, padX, padY);
-    });
 }
 
 function shelvesShortLabel(n) {
@@ -407,59 +349,14 @@ function addEditableShelvesBadge(layer, cx, cy, count, scale) {
     });
 }
 
-function addEditableDim(layer, opts) {
-    const g = document.createElementNS(SVG_NS, 'g');
-    g.setAttribute('class', 'dim-editable' + (opts.className ? ' ' + opts.className : ''));
-    g.setAttribute('data-field', opts.field);
-    g.setAttribute('role', 'button');
-    g.setAttribute('tabindex', '0');
-    g.setAttribute('aria-label', `Edytuj: ${EDITABLE_DIMS[opts.field]?.label || opts.field}`);
-    g.dataset.hitPadX = String(opts.hitPadX ?? 10);
-    g.dataset.hitPadY = String(opts.hitPadY ?? 8);
-
-    const rect = document.createElementNS(SVG_NS, 'rect');
-    rect.setAttribute('class', 'dim-hit');
-    g.appendChild(rect);
-
-    const text = document.createElementNS(SVG_NS, 'text');
-    text.setAttribute('x', opts.x);
-    text.setAttribute('y', opts.y);
-    text.setAttribute('fill', opts.fill || '#ffffff');
-    text.setAttribute('font-size', opts.fontSize || 39);
-    text.setAttribute('font-weight', opts.fontWeight || '700');
-    text.setAttribute('text-anchor', opts.anchor || 'middle');
-    text.setAttribute('dominant-baseline', 'middle');
-    if (opts.textTransform) {
-        text.setAttribute('transform', opts.textTransform);
-    }
-    text.textContent = opts.text;
-    g.appendChild(text);
-    layer.appendChild(g);
-
-    const activate = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        openDimEditor(opts.field, e);
-    };
-    g.addEventListener('pointerdown', activate);
-    g.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openDimEditor(opts.field, e);
-        }
-    });
-}
-
 function draw() {
     closeDimEditor();
-    pulseIndex = 0;
-    const width = 500;
     const height = parseFloat(document.getElementById("height").value);
     const wThickness = parseFloat(document.getElementById("wieniecThickness").value);
     const sThickness = parseFloat(document.getElementById("shelfThickness").value);
     const sideThickness = wThickness;
     const suppDiameter = parseFloat(document.getElementById("supportDiameter").value);
-    const shelves = parseInt(document.getElementById("shelves").value);
+    const shelves = parseInt(document.getElementById("shelves").value, 10);
     const svg = document.getElementById("svg");
     svg.innerHTML = "";
     const frontLayer = document.createElementNS(SVG_NS, 'g');
@@ -467,19 +364,20 @@ function draw() {
 
     const cabinetDrawHeight = 840;
     const scale = cabinetDrawHeight / Math.max(400, height);
-    // Zoptymalizowana szerokość szafki w rysunku dla zachowania czytelnych proporcji i wypełnienia pionowego ekranu:
     const drawWidth = 360;
-    const startX = 105;
-    const startY = 32;
-    const sideWidth = Math.max(12, sideThickness * scale);
-    const drawWThickness = Math.max(12, wThickness * scale);
-    const drawSThickness = Math.max(10, sThickness * scale);
+    const startX = 215;
+    const startY = 66;
+    const sideWidth = Math.max(4, sideThickness * scale);
+    const drawWThickness = Math.max(4, wThickness * scale);
     const shelfWidth = drawWidth - sideWidth * 2;
     const innerSpace = height - (wThickness * 2);
     const spaceForShelves = shelves * sThickness;
     const gap = shelves > 0 ? (innerSpace - spaceForShelves) / (shelves + 1) : 0;
+    const isValid = innerSpace > 0 && (shelves === 0 || innerSpace - spaceForShelves > 0);
 
-    const leftSide = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    const toSvgY = (fromBottomMm) => startY + (height - fromBottomMm) * scale;
+
+    const leftSide = document.createElementNS(SVG_NS, "rect");
     leftSide.setAttribute("x", startX);
     leftSide.setAttribute("y", startY);
     leftSide.setAttribute("width", sideWidth);
@@ -489,7 +387,7 @@ function draw() {
     leftSide.setAttribute("stroke-width", "2");
     svg.appendChild(leftSide);
 
-    const rightSide = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    const rightSide = document.createElementNS(SVG_NS, "rect");
     rightSide.setAttribute("x", startX + drawWidth - sideWidth);
     rightSide.setAttribute("y", startY);
     rightSide.setAttribute("width", sideWidth);
@@ -499,7 +397,7 @@ function draw() {
     rightSide.setAttribute("stroke-width", "2");
     svg.appendChild(rightSide);
 
-    const top = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    const top = document.createElementNS(SVG_NS, "rect");
     top.setAttribute("x", startX + sideWidth);
     top.setAttribute("y", startY);
     top.setAttribute("width", shelfWidth);
@@ -509,7 +407,7 @@ function draw() {
     top.setAttribute("stroke-width", "2");
     svg.appendChild(top);
 
-    const bottom = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    const bottom = document.createElementNS(SVG_NS, "rect");
     bottom.setAttribute("x", startX + sideWidth);
     bottom.setAttribute("y", startY + height * scale - drawWThickness);
     bottom.setAttribute("width", shelfWidth);
@@ -519,37 +417,78 @@ function draw() {
     bottom.setAttribute("stroke-width", "2");
     svg.appendChild(bottom);
 
-    for (let i = 1; i <= shelves; i++) {
-        const shelfY = startY + (wThickness + (i * gap) + ((i - 1) * sThickness)) * scale;
-        const shelf = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        shelf.setAttribute("x", startX + sideWidth);
-        shelf.setAttribute("y", shelfY);
-        shelf.setAttribute("width", shelfWidth);
-        shelf.setAttribute("height", drawSThickness);
-        shelf.setAttribute("fill", "#3a4a6a");
-        shelf.setAttribute("stroke", "#000");
-        shelf.setAttribute("stroke-width", "1.5");
-        svg.appendChild(shelf);
+    const isInner = dimRefMode === 'wew';
+    const dimBaseOffset = isInner ? wThickness : 0;
+    const baseY = isInner ? (startY + height * scale - drawWThickness) : (startY + height * scale);
 
-        const leftSupport = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        leftSupport.setAttribute("x", startX + sideWidth);
-        leftSupport.setAttribute("y", shelfY + drawSThickness);
-        leftSupport.setAttribute("width", 14);
-        leftSupport.setAttribute("height", Math.max(6, suppDiameter * scale));
-        leftSupport.setAttribute("fill", "#a0aec0");
-        leftSupport.setAttribute("stroke", "#718096");
-        leftSupport.setAttribute("stroke-width", "1");
-        svg.appendChild(leftSupport);
+    const renderedShelves = [];
+    if (isValid && shelves > 0) {
+        for (let k = 1; k <= shelves; k++) {
+            const shelfBottomZew = wThickness + (k * gap) + ((k - 1) * sThickness);
+            const shelfCenterZew = shelfBottomZew + (sThickness / 2);
+            const shelfTopZew = shelfBottomZew + sThickness;
+            const supportCenterZew = shelfBottomZew - (suppDiameter / 2);
 
-        const rightSupport = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rightSupport.setAttribute("x", startX + drawWidth - sideWidth - 14);
-        rightSupport.setAttribute("y", shelfY + drawSThickness);
-        rightSupport.setAttribute("width", 14);
-        rightSupport.setAttribute("height", Math.max(6, suppDiameter * scale));
-        rightSupport.setAttribute("fill", "#a0aec0");
-        rightSupport.setAttribute("stroke", "#718096");
-        rightSupport.setAttribute("stroke-width", "1");
-        svg.appendChild(rightSupport);
+            const realBottomY = toSvgY(shelfBottomZew);
+            const realTopY = toSvgY(shelfTopZew);
+            const rawShelfH = realBottomY - realTopY;
+            const drawShelfH = Math.max(4, rawShelfH);
+
+            let shelfDrawY = realTopY;
+            let shelfVisualBottomY = realBottomY;
+            if (rawShelfH < 4) {
+                const mid = (realTopY + realBottomY) / 2;
+                shelfDrawY = mid - drawShelfH / 2;
+                shelfVisualBottomY = mid + drawShelfH / 2;
+            }
+            const shelfVisualCenterY = shelfDrawY + drawShelfH / 2;
+
+            const supportDrawHeight = Math.max(5, suppDiameter * scale);
+            // Podpórka przylega górną krawędzią dokładnie do spodu półki
+            const supportY = shelfVisualBottomY;
+            const supportVisualCenterY = supportY + supportDrawHeight / 2;
+
+            const shelf = document.createElementNS(SVG_NS, "rect");
+            shelf.setAttribute("x", startX + sideWidth);
+            shelf.setAttribute("y", shelfDrawY);
+            shelf.setAttribute("width", shelfWidth);
+            shelf.setAttribute("height", drawShelfH);
+            shelf.setAttribute("fill", "#3a4a6a");
+            shelf.setAttribute("stroke", "#000");
+            shelf.setAttribute("stroke-width", "1.5");
+            svg.appendChild(shelf);
+
+            const leftSupport = document.createElementNS(SVG_NS, "rect");
+            leftSupport.setAttribute("x", startX + sideWidth);
+            leftSupport.setAttribute("y", supportY);
+            leftSupport.setAttribute("width", 14);
+            leftSupport.setAttribute("height", supportDrawHeight);
+            leftSupport.setAttribute("fill", "#a0aec0");
+            leftSupport.setAttribute("stroke", "#718096");
+            leftSupport.setAttribute("stroke-width", "1");
+            svg.appendChild(leftSupport);
+
+            const rightSupport = document.createElementNS(SVG_NS, "rect");
+            rightSupport.setAttribute("x", startX + drawWidth - sideWidth - 14);
+            rightSupport.setAttribute("y", supportY);
+            rightSupport.setAttribute("width", 14);
+            rightSupport.setAttribute("height", supportDrawHeight);
+            rightSupport.setAttribute("fill", "#a0aec0");
+            rightSupport.setAttribute("stroke", "#718096");
+            rightSupport.setAttribute("stroke-width", "1");
+            svg.appendChild(rightSupport);
+
+            renderedShelves.push({
+                index: k,
+                shelfCenter: shelfCenterZew - dimBaseOffset,
+                supportCenter: supportCenterZew - dimBaseOffset,
+                shelfDrawY,
+                drawShelfH,
+                shelfVisualBottomY,
+                shelfVisualCenterY,
+                supportVisualCenterY
+            });
+        }
     }
 
     const COLOR_EDIT = '#10b981';
@@ -559,151 +498,164 @@ function draw() {
     const openingDimColor = COLOR_OPENING;
     const fontSize = 32;
     const leftLineX = startX - 18;
-    const maxSuppDistanceFromBottom = shelves > 0 ? (wThickness + shelves * gap + (shelves - 1) * sThickness - (suppDiameter / 2)) : 0;
+    const rightLineX = startX + drawWidth + 18;
 
-    if (shelves > 0) {
-        const leftDimLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    if (renderedShelves.length > 0) {
+        const highest = renderedShelves[renderedShelves.length - 1];
+        const leftDimLine = document.createElementNS(SVG_NS, "line");
         leftDimLine.setAttribute("x1", leftLineX);
-        leftDimLine.setAttribute("y1", startY + height * scale);
+        leftDimLine.setAttribute("y1", baseY);
         leftDimLine.setAttribute("x2", leftLineX);
-        leftDimLine.setAttribute("y2", startY + (height - maxSuppDistanceFromBottom) * scale);
+        leftDimLine.setAttribute("y2", highest.supportVisualCenterY);
         leftDimLine.setAttribute("stroke", openingDimColor);
         leftDimLine.setAttribute("stroke-width", "0.8");
         svg.appendChild(leftDimLine);
-    }
 
-    for (let k = 0; k <= shelves; k++) {
-        let suppY_SVG, labelText;
-        if (k === 0) {
-            suppY_SVG = startY + height * scale;
-            labelText = "0";
-        } else {
-            const distanceFromBottom = wThickness + (k * gap) + ((k - 1) * sThickness) - (suppDiameter / 2);
-            suppY_SVG = startY + (height - distanceFromBottom) * scale;
-            labelText = `O${k}: ${distanceFromBottom.toFixed(1)} mm`;
-        }
-        const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        tick.setAttribute("x1", leftLineX - 5);
-        tick.setAttribute("y1", suppY_SVG);
-        tick.setAttribute("x2", leftLineX + 5);
-        tick.setAttribute("y2", suppY_SVG);
-        tick.setAttribute("stroke", openingDimColor);
-        tick.setAttribute("stroke-width", "1.5");
-        svg.appendChild(tick);
-        if (k > 0) {
-            const centerLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            centerLine.setAttribute("x1", startX);
-            centerLine.setAttribute("y1", suppY_SVG);
-            centerLine.setAttribute("x2", startX + sideWidth + 14);
-            centerLine.setAttribute("y2", suppY_SVG);
-            centerLine.setAttribute("stroke", openingDimColor);
-            centerLine.setAttribute("stroke-width", "1.0");
-            centerLine.setAttribute("stroke-dasharray", "3,2");
-            svg.appendChild(centerLine);
-        }
-        const dimTextL = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        dimTextL.setAttribute("x", leftLineX - 8);
-        dimTextL.setAttribute("y", suppY_SVG);
-        dimTextL.setAttribute("fill", openingDimColor);
-        dimTextL.setAttribute("font-size", fontSize - 2);
-        dimTextL.setAttribute("text-anchor", "end");
-        dimTextL.setAttribute("dominant-baseline", "middle");
-        if (k === 0) {
-            dimTextL.textContent = labelText;
-        } else {
-            var parts = labelText.split(': ');
-            var t1 = document.createElementNS(SVG_NS, 'tspan');
-            t1.setAttribute('x', leftLineX - 8); t1.setAttribute('dy', '-6');
-            t1.setAttribute('font-size', fontSize - 5);
-            t1.setAttribute('font-weight', '700');
-            t1.textContent = parts[0];
-            dimTextL.appendChild(t1);
-            var t2 = document.createElementNS(SVG_NS, 'tspan');
-            t2.setAttribute('x', leftLineX - 8); t2.setAttribute('dy', (fontSize - 2));
-            t2.setAttribute('font-size', fontSize - 4);
-            t2.textContent = parts[1];
-            dimTextL.appendChild(t2);
-        }
-        svg.appendChild(dimTextL);
-    }
-
-    const rightLineX = startX + drawWidth + 18;
-    const maxShelfDistanceFromBottom = shelves > 0 ? (wThickness + shelves * gap + (shelves - 0.5) * sThickness) : 0;
-
-    if (shelves > 0) {
-        const mainDimLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        const mainDimLine = document.createElementNS(SVG_NS, "line");
         mainDimLine.setAttribute("x1", rightLineX);
-        mainDimLine.setAttribute("y1", startY + height * scale);
+        mainDimLine.setAttribute("y1", baseY);
         mainDimLine.setAttribute("x2", rightLineX);
-        mainDimLine.setAttribute("y2", startY + (height - maxShelfDistanceFromBottom) * scale);
+        mainDimLine.setAttribute("y2", highest.shelfVisualCenterY);
         mainDimLine.setAttribute("stroke", dimColor);
         mainDimLine.setAttribute("stroke-width", "0.8");
         svg.appendChild(mainDimLine);
     }
 
-    for (let k = 0; k <= shelves; k++) {
-        let shelfY_SVG, labelText;
-        if (k === 0) {
-            shelfY_SVG = startY + height * scale;
-            labelText = "0";
-        } else {
-            const distanceFromBottom = wThickness + (k * gap) + ((k - 1) * sThickness) + (0.5 * sThickness);
-            shelfY_SVG = startY + (height - distanceFromBottom) * scale;
-            labelText = `P${k}: ${distanceFromBottom.toFixed(1)} mm`;
-        }
-        const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    // 0 datum left
+    {
+        const tick = document.createElementNS(SVG_NS, "line");
+        tick.setAttribute("x1", leftLineX - 5);
+        tick.setAttribute("y1", baseY);
+        tick.setAttribute("x2", leftLineX + 5);
+        tick.setAttribute("y2", baseY);
+        tick.setAttribute("stroke", openingDimColor);
+        tick.setAttribute("stroke-width", "1.5");
+        svg.appendChild(tick);
+        const dimTextL = document.createElementNS(SVG_NS, "text");
+        dimTextL.setAttribute("x", leftLineX - 8);
+        dimTextL.setAttribute("y", baseY);
+        dimTextL.setAttribute("fill", openingDimColor);
+        dimTextL.setAttribute("font-size", fontSize - 2);
+        dimTextL.setAttribute("text-anchor", "end");
+        dimTextL.setAttribute("dominant-baseline", "middle");
+        dimTextL.textContent = "0";
+        svg.appendChild(dimTextL);
+    }
+
+    // 0 datum right
+    {
+        const tick = document.createElementNS(SVG_NS, "line");
         tick.setAttribute("x1", rightLineX - 5);
-        tick.setAttribute("y1", shelfY_SVG);
+        tick.setAttribute("y1", baseY);
         tick.setAttribute("x2", rightLineX + 5);
-        tick.setAttribute("y2", shelfY_SVG);
+        tick.setAttribute("y2", baseY);
         tick.setAttribute("stroke", "#ff4444");
         tick.setAttribute("stroke-width", "1.5");
         svg.appendChild(tick);
-        if (k > 0) {
-            const centerLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            centerLine.setAttribute("x1", startX + sideWidth);
-            centerLine.setAttribute("y1", shelfY_SVG);
-            centerLine.setAttribute("x2", startX + drawWidth - sideWidth);
-            centerLine.setAttribute("y2", shelfY_SVG);
-            centerLine.setAttribute("stroke", "#ff4444");
-            centerLine.setAttribute("stroke-width", "1.0");
-            centerLine.setAttribute("stroke-dasharray", "5,3");
-            svg.appendChild(centerLine);
-        }
-        const dimTextR = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        const dimTextR = document.createElementNS(SVG_NS, "text");
         dimTextR.setAttribute("x", rightLineX + 8);
-        dimTextR.setAttribute("y", shelfY_SVG);
+        dimTextR.setAttribute("y", baseY);
         dimTextR.setAttribute("fill", dimTextColor);
         dimTextR.setAttribute("font-size", fontSize - 2);
         dimTextR.setAttribute("text-anchor", "start");
         dimTextR.setAttribute("dominant-baseline", "middle");
-        if (k === 0) {
-            dimTextR.textContent = labelText;
-        } else {
-            var parts = labelText.split(': ');
-            var t1 = document.createElementNS(SVG_NS, 'tspan');
-            t1.setAttribute('x', rightLineX + 8); t1.setAttribute('dy', '-6');
-            t1.setAttribute('font-size', fontSize - 5);
-            t1.setAttribute('font-weight', '700');
-            t1.textContent = parts[0];
-            dimTextR.appendChild(t1);
-            var t2 = document.createElementNS(SVG_NS, 'tspan');
-            t2.setAttribute('x', rightLineX + 8); t2.setAttribute('dy', (fontSize - 2));
-            t2.setAttribute('font-size', fontSize - 4);
-            t2.textContent = parts[1];
-            dimTextR.appendChild(t2);
-        }
+        dimTextR.textContent = "0";
         svg.appendChild(dimTextR);
     }
+
+    renderedShelves.forEach((s) => {
+        // Left: O_k (centerline of support pin hole)
+        const tickL = document.createElementNS(SVG_NS, "line");
+        tickL.setAttribute("x1", leftLineX - 5);
+        tickL.setAttribute("y1", s.supportVisualCenterY);
+        tickL.setAttribute("x2", leftLineX + 5);
+        tickL.setAttribute("y2", s.supportVisualCenterY);
+        tickL.setAttribute("stroke", openingDimColor);
+        tickL.setAttribute("stroke-width", "1.5");
+        svg.appendChild(tickL);
+
+        const centerLineL = document.createElementNS(SVG_NS, "line");
+        centerLineL.setAttribute("x1", startX);
+        centerLineL.setAttribute("y1", s.supportVisualCenterY);
+        centerLineL.setAttribute("x2", startX + sideWidth + 14);
+        centerLineL.setAttribute("y2", s.supportVisualCenterY);
+        centerLineL.setAttribute("stroke", openingDimColor);
+        centerLineL.setAttribute("stroke-width", "1.0");
+        centerLineL.setAttribute("stroke-dasharray", "3,2");
+        svg.appendChild(centerLineL);
+
+        const dimTextL = document.createElementNS(SVG_NS, "text");
+        dimTextL.setAttribute("x", leftLineX - 8);
+        dimTextL.setAttribute("y", s.supportVisualCenterY);
+        dimTextL.setAttribute("fill", openingDimColor);
+        dimTextL.setAttribute("font-size", fontSize - 2);
+        dimTextL.setAttribute("text-anchor", "end");
+        dimTextL.setAttribute("dominant-baseline", "middle");
+        const t1L = document.createElementNS(SVG_NS, 'tspan');
+        t1L.setAttribute('x', leftLineX - 8);
+        t1L.setAttribute('dy', '-6');
+        t1L.setAttribute('font-size', fontSize - 5);
+        t1L.setAttribute('font-weight', '700');
+        t1L.textContent = `O${s.index}`;
+        dimTextL.appendChild(t1L);
+        const t2L = document.createElementNS(SVG_NS, 'tspan');
+        t2L.setAttribute('x', leftLineX - 8);
+        t2L.setAttribute('dy', fontSize - 2);
+        t2L.setAttribute('font-size', fontSize - 4);
+        t2L.textContent = `${s.supportCenter.toFixed(1)} mm`;
+        dimTextL.appendChild(t2L);
+        svg.appendChild(dimTextL);
+
+        // Right: P_k (centerline of shelf)
+        const tickR = document.createElementNS(SVG_NS, "line");
+        tickR.setAttribute("x1", rightLineX - 5);
+        tickR.setAttribute("y1", s.shelfVisualCenterY);
+        tickR.setAttribute("x2", rightLineX + 5);
+        tickR.setAttribute("y2", s.shelfVisualCenterY);
+        tickR.setAttribute("stroke", "#ff4444");
+        tickR.setAttribute("stroke-width", "1.5");
+        svg.appendChild(tickR);
+
+        const centerLineR = document.createElementNS(SVG_NS, "line");
+        centerLineR.setAttribute("x1", startX + sideWidth);
+        centerLineR.setAttribute("y1", s.shelfVisualCenterY);
+        centerLineR.setAttribute("x2", startX + drawWidth - sideWidth);
+        centerLineR.setAttribute("y2", s.shelfVisualCenterY);
+        centerLineR.setAttribute("stroke", "#ff4444");
+        centerLineR.setAttribute("stroke-width", "1.0");
+        centerLineR.setAttribute("stroke-dasharray", "5,3");
+        svg.appendChild(centerLineR);
+
+        const dimTextR = document.createElementNS(SVG_NS, "text");
+        dimTextR.setAttribute("x", rightLineX + 8);
+        dimTextR.setAttribute("y", s.shelfVisualCenterY);
+        dimTextR.setAttribute("fill", dimTextColor);
+        dimTextR.setAttribute("font-size", fontSize - 2);
+        dimTextR.setAttribute("text-anchor", "start");
+        dimTextR.setAttribute("dominant-baseline", "middle");
+        const t1R = document.createElementNS(SVG_NS, 'tspan');
+        t1R.setAttribute('x', rightLineX + 8);
+        t1R.setAttribute('dy', '-6');
+        t1R.setAttribute('font-size', fontSize - 5);
+        t1R.setAttribute('font-weight', '700');
+        t1R.textContent = `P${s.index}`;
+        dimTextR.appendChild(t1R);
+        const t2R = document.createElementNS(SVG_NS, 'tspan');
+        t2R.setAttribute('x', rightLineX + 8);
+        t2R.setAttribute('dy', fontSize - 2);
+        t2R.setAttribute('font-size', fontSize - 4);
+        t2R.textContent = `${s.shelfCenter.toFixed(1)} mm`;
+        dimTextR.appendChild(t2R);
+        svg.appendChild(dimTextR);
+    });
 
     const totalHeightX = rightLineX + 165;
     const heightTextY = startY + (height * scale) / 2;
     const heightLabelGapHalf = fontSize * 2.3;
-    const heightTextX = totalHeightX;
 
     function appendHeightLineSeg(y1, y2) {
         if (y2 - y1 < 2) return;
-        const seg = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        const seg = document.createElementNS(SVG_NS, 'line');
         seg.setAttribute('x1', totalHeightX);
         seg.setAttribute('y1', y1);
         seg.setAttribute('x2', totalHeightX);
@@ -716,7 +668,7 @@ function draw() {
     appendHeightLineSeg(startY, heightTextY - heightLabelGapHalf);
     appendHeightLineSeg(heightTextY + heightLabelGapHalf, startY + height * scale);
 
-    const tickTop = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    const tickTop = document.createElementNS(SVG_NS, "line");
     tickTop.setAttribute("x1", totalHeightX - 5);
     tickTop.setAttribute("y1", startY);
     tickTop.setAttribute("x2", totalHeightX + 5);
@@ -725,7 +677,7 @@ function draw() {
     tickTop.setAttribute("stroke-width", "2");
     svg.appendChild(tickTop);
 
-    const tickBottom = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    const tickBottom = document.createElementNS(SVG_NS, "line");
     tickBottom.setAttribute("x1", totalHeightX - 5);
     tickBottom.setAttribute("y1", startY + height * scale);
     tickBottom.setAttribute("x2", totalHeightX + 5);
@@ -736,7 +688,7 @@ function draw() {
 
     addEditableGreenBadge(frontLayer, {
         field: 'height',
-        cx: heightTextX,
+        cx: totalHeightX,
         cy: heightTextY,
         value: height,
         subLabel: 'mm',
@@ -747,15 +699,12 @@ function draw() {
 
     const cabinetCenterX = startX + drawWidth / 2;
     const cabinetCenterY = startY + (height * scale) / 2;
-
     addEditableShelvesBadge(frontLayer, cabinetCenterX, cabinetCenterY, shelves, scale);
 
-    const wieniecBadgeX = startX + drawWidth * 0.25;
-    const wieniecCenterY = startY - 24;
     addEditableGreenBadge(frontLayer, {
         field: 'wieniecThickness',
-        cx: wieniecBadgeX,
-        cy: wieniecCenterY,
+        cx: startX + drawWidth * 0.25,
+        cy: startY - 26,
         value: wThickness,
         subLabel: 'wień.',
         scale,
@@ -763,28 +712,25 @@ function draw() {
         ariaLabel: `Edytuj grubość wieńców: ${wThickness} mm`
     });
 
-    if (shelves >= 1) {
-        const firstShelfY = startY + (wThickness + gap) * scale;
-        const firstShelfCenterY = firstShelfY + drawSThickness / 2;
-        const shelfBadgeX = startX + drawWidth * 0.75;
+    if (renderedShelves.length >= 1) {
+        const lowest = renderedShelves[0];
+        const highest = renderedShelves[renderedShelves.length - 1];
+
         addEditableGreenBadge(frontLayer, {
             field: 'shelfThickness',
-            cx: shelfBadgeX,
-            cy: firstShelfCenterY,
+            cx: startX + drawWidth * 0.75,
+            cy: highest.shelfVisualCenterY,
             value: sThickness,
             subLabel: 'pół.',
             scale,
-            sizeTier: 'md',
             ariaLabel: `Edytuj grubość półki: ${sThickness} mm`
         });
 
-        const supportCx = startX + sideWidth + 36;
-        const supportCy = firstShelfY + drawSThickness + 22;
         const suppLabel = suppDiameter % 1 === 0 ? String(suppDiameter) : suppDiameter.toFixed(1);
         addEditableGreenBadge(frontLayer, {
             field: 'supportDiameter',
-            cx: supportCx,
-            cy: supportCy,
+            cx: startX + sideWidth + 36,
+            cy: lowest.supportVisualCenterY + 24,
             value: suppDiameter,
             displayValue: `Ø${suppLabel}`,
             subLabel: 'podp.',
@@ -792,27 +738,24 @@ function draw() {
             sizeTier: 'sm',
             ariaLabel: `Edytuj średnicę podpórki: Ø${suppLabel} mm`
         });
-    }
 
-    if (shelves >= 1) {
-        const spaceText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        const bottomPanelY = startY + height * scale - drawWThickness;
-        const spaceY = bottomPanelY - (gap / 2) * scale;
+        const spaceText = document.createElementNS(SVG_NS, "text");
+        const bottomPanelTopY = startY + height * scale - drawWThickness;
+        const spaceY = (bottomPanelTopY + lowest.shelfVisualBottomY) / 2;
         spaceText.setAttribute("x", startX + drawWidth / 2);
         spaceText.setAttribute("y", spaceY);
         spaceText.setAttribute("fill", "#000");
         spaceText.setAttribute("font-size", fontSize - 4);
         spaceText.setAttribute("font-weight", "600");
         spaceText.setAttribute("text-anchor", "middle");
-        spaceText.setAttribute("alignment-baseline", "middle");
-        spaceText.innerHTML = `<tspan x="${startX + drawWidth / 2}" dy="0">Światło: ${gap.toFixed(1)} mm</tspan>`;
+        spaceText.setAttribute("dominant-baseline", "middle");
+        spaceText.textContent = `Światło: ${gap.toFixed(1)} mm`;
         svg.appendChild(spaceText);
     }
 
     svg.appendChild(frontLayer);
 
     setTimeout(() => {
-        syncAllDimHitRects(svg);
         updateViewBox('svg');
     }, 10);
 }
@@ -831,12 +774,16 @@ document.getElementById('svgContainer').addEventListener('click', (e) => {
     }
 });
 
-window.addEventListener('resize', () => setTimeout(() => {
-    const svg = document.getElementById('svg');
-    syncAllDimHitRects(svg);
-    updateViewBox('svg');
-}, 100));
+function setDimRefMode(mode) {
+    dimRefMode = mode === 'wew' ? 'wew' : 'zew';
+    document.getElementById('dimRefZew').classList.toggle('active', dimRefMode === 'zew');
+    document.getElementById('dimRefWew').classList.toggle('active', dimRefMode === 'wew');
+    draw();
+}
+document.getElementById('dimRefZew').addEventListener('click', () => setDimRefMode('zew'));
+document.getElementById('dimRefWew').addEventListener('click', () => setDimRefMode('wew'));
+
+window.addEventListener('resize', () => setTimeout(() => updateViewBox('svg'), 100));
 </script>
-<script>if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js')}</script>
 </body>
 </html>
